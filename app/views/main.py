@@ -4,6 +4,7 @@ from app.models import Project, Invoice, Client, Subcontractor, SubcontractorPay
 from app import db
 from sqlalchemy import func
 from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
 
 main_bp = Blueprint('main', __name__)
 
@@ -53,7 +54,6 @@ def dashboard():
     # Cash flow havi bontás (utolsó 6 hónap)
     cashflow_data = []
     for i in range(5, -1, -1):
-        from dateutil.relativedelta import relativedelta
         month_start = (datetime.now() - relativedelta(months=i)).replace(day=1)
         month_end = (month_start + relativedelta(months=1))
         month_income = db.session.query(func.sum(Invoice.amount)).filter(

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Telepítés — SOLVIOR PROJECT</title>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet">
+</head>
+<body class="d-flex align-items-center min-vh-100" style="background:#f0f4f8;">
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold mb-1">Első bejelentkezés</h2>
+                    <p class="text-muted mb-4">Hozza létre az admin fiókot</p>
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Teljes név</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Jelszó</label>
+                            <input type="password" name="password" class="form-control" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Admin fiók létrehozása</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

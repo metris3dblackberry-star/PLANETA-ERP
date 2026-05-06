@@ -1,0 +1,84 @@
+{% extends 'base/layout.html' %}
+{% block title %}Kifizetés rögzítése{% endblock %}
+{% block page_title %}Alvállalkozói kifizetés rögzítése{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-cash me-2"></i>Kifizetés rögzítése
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Projekt <span class="text-danger">*</span></label>
+                            <select name="project_id" class="form-select" required>
+                                <option value="">Válassz projektet...</option>
+                                {% for p in projects %}
+                                <option value="{{ p.id }}"
+                                    {% if request.args.get('project_id')|string == p.id|string %}selected{% endif %}>
+                                    {{ p.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Alvállalkozó <span class="text-danger">*</span></label>
+                            <select name="subcontractor_id" class="form-select" required>
+                                <option value="">Válassz alvállalkozót...</option>
+                                {% for s in subcontractors %}
+                                <option value="{{ s.id }}">{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Összeg (Ft) <span class="text-danger">*</span></label>
+                            <input type="number" name="amount" class="form-control"
+                                   min="0" step="1" placeholder="0" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Státusz</label>
+                            <select name="status" class="form-select">
+                                <option value="pending">Függőben</option>
+                                <option value="paid">Fizetve</option>
+                                <option value="overdue">Lejárt</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kiállítás dátuma</label>
+                            <input type="date" name="issue_date" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Esedékesség</label>
+                            <input type="date" name="due_date" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Leírás / Munkaszám</label>
+                            <input type="text" name="description" class="form-control"
+                                   placeholder="Elvégzett munka rövid leírása">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Számla hivatkozás</label>
+                            <input type="text" name="invoice_ref" class="form-control"
+                                   placeholder="pl. ALV-2025-001">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Megjegyzés</label>
+                            <textarea name="notes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-device-floppy me-1"></i>Kifizetés rögzítése
+                        </button>
+                        <a href="{{ url_for('subcontractors.list') }}" class="btn btn-outline-secondary">Mégse</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

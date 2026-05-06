@@ -1,0 +1,66 @@
+{% extends 'base/layout.html' %}
+{% block title %}{{ 'Ügyfél szerkesztése' if client else 'Új ügyfél' }}{% endblock %}
+{% block page_title %}{{ 'Ügyfél szerkesztése' if client else 'Új ügyfél' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-building me-2"></i>
+                    {{ 'Ügyfél szerkesztése' if client else 'Új ügyfél rögzítése' }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Cégnév / Ügyfél neve <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control"
+                                   value="{{ client.name if client else '' }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kapcsolattartó</label>
+                            <input type="text" name="contact_person" class="form-control"
+                                   value="{{ client.contact_person if client else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Adószám</label>
+                            <input type="text" name="tax_number" class="form-control"
+                                   value="{{ client.tax_number if client else '' }}"
+                                   placeholder="12345678-1-42">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control"
+                                   value="{{ client.email if client else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Telefon</label>
+                            <input type="text" name="phone" class="form-control"
+                                   value="{{ client.phone if client else '' }}"
+                                   placeholder="+36 1 234 5678">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Cím</label>
+                            <input type="text" name="address" class="form-control"
+                                   value="{{ client.address if client else '' }}"
+                                   placeholder="1000 Budapest, Példa utca 1.">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Megjegyzés</label>
+                            <textarea name="notes" class="form-control" rows="3">{{ client.notes if client else '' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-device-floppy me-1"></i>Mentés
+                        </button>
+                        <a href="{{ url_for('clients.list') }}" class="btn btn-outline-secondary">Mégse</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

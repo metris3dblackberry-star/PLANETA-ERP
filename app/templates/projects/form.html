@@ -1,0 +1,89 @@
+{% extends 'base/layout.html' %}
+{% block title %}{{ 'Projekt szerkesztése' if project else 'Új projekt' }}{% endblock %}
+{% block page_title %}{{ 'Projekt szerkesztése' if project else 'Új projekt' }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-folder me-2"></i>
+                    {{ 'Projekt szerkesztése — ' ~ project.name if project else 'Új projekt rögzítése' }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Projekt neve <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control"
+                                   value="{{ project.name if project else '' }}" required
+                                   placeholder="pl. Iroda felújítás — Budapest">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Ügyfél <span class="text-danger">*</span></label>
+                            <select name="client_id" class="form-select" required>
+                                <option value="">Válassz ügyfelet...</option>
+                                {% for c in clients %}
+                                <option value="{{ c.id }}"
+                                    {% if project and project.client_id == c.id %}selected{% endif %}>
+                                    {{ c.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Státusz</label>
+                            <select name="status" class="form-select">
+                                <option value="active" {% if not project or project.status == 'active' %}selected{% endif %}>Aktív</option>
+                                <option value="paused" {% if project and project.status == 'paused' %}selected{% endif %}>Szünetelő</option>
+                                <option value="completed" {% if project and project.status == 'completed' %}selected{% endif %}>Befejezett</option>
+                                <option value="cancelled" {% if project and project.status == 'cancelled' %}selected{% endif %}>Lemondott</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Szerződéses érték (Ft)</label>
+                            <input type="number" name="contract_value" class="form-control"
+                                   value="{{ project.contract_value if project else '' }}"
+                                   min="0" step="1" placeholder="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kezdés dátuma</label>
+                            <input type="date" name="start_date" class="form-control"
+                                   value="{{ project.start_date|string if project and project.start_date else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Befejezés dátuma</label>
+                            <input type="date" name="end_date" class="form-control"
+                                   value="{{ project.end_date|string if project and project.end_date else '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Leírás</label>
+                            <textarea name="description" class="form-control" rows="3"
+                                      placeholder="Projekt rövid leírása, hatókör...">{{ project.description if project else '' }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Megjegyzés</label>
+                            <textarea name="notes" class="form-control" rows="2">{{ project.notes if project else '' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-device-floppy me-1"></i>Mentés
+                        </button>
+                        <a href="{{ url_for('projects.list') }}" class="btn btn-outline-secondary">Mégse</a>
+                        {% if project %}
+                        <form method="POST" action="{{ url_for('projects.delete', id=project.id) }}"
+                              class="ms-auto" onsubmit="return confirm('Biztosan törli a projektet? Ez visszavonhatatlan!')">
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="ti ti-trash me-1"></i>Törlés
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

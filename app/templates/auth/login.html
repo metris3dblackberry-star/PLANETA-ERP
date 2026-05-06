@@ -3,45 +3,713 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bejelentkezés — SOLVIOR PROJECT</title>
-    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet">
+    <title>SOLVIOR CRM — Bejelentkezés</title>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.37.1/dist/tabler-icons.min.css" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        html, body { width:100%; height:100%; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+
+        /* ══════════ BACKGROUND ══════════ */
+        .bg {
+            position:fixed; inset:0; z-index:0;
+            background:
+                radial-gradient(ellipse 60% 40% at 15% 50%, rgba(20,55,200,0.35) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 60% at 85% 15%, rgba(30,70,220,0.28) 0%, transparent 60%),
+                radial-gradient(ellipse 70% 50% at 70% 90%, rgba(120,30,160,0.25) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 50% 50%, rgba(15,40,140,0.4) 0%, transparent 80%),
+                linear-gradient(160deg, #030a1e 0%, #060f2a 20%, #091640 50%, #0b1545 70%, #050b22 100%);
+            animation: bgBreath 10s ease-in-out infinite alternate;
+        }
+        @keyframes bgBreath {
+            from { filter:brightness(1) hue-rotate(0deg); }
+            to   { filter:brightness(1.1) hue-rotate(8deg); }
+        }
+
+        /* Grid overlay */
+        .bg::after {
+            content:'';
+            position:absolute; inset:0;
+            background-image:
+                linear-gradient(rgba(60,120,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(60,120,255,0.04) 1px, transparent 1px);
+            background-size:60px 60px;
+            animation:gridDrift 20s linear infinite;
+        }
+        @keyframes gridDrift {
+            from { background-position:0 0; }
+            to   { background-position:60px 60px; }
+        }
+
+        /* ══════════ PARTICLES ══════════ */
+        #canvas-particles {
+            position:fixed; inset:0; z-index:1; pointer-events:none;
+        }
+
+        /* ══════════ SCENE ══════════ */
+        .scene {
+            position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden;
+        }
+
+        /* ══════════ BRANDING ══════════ */
+        .brand {
+            position:absolute; top:9%; left:4.5%;
+            animation:fadeSlideIn 1.2s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes fadeSlideIn {
+            from { opacity:0; transform:translateX(-30px); }
+            to   { opacity:1; transform:translateX(0); }
+        }
+        .brand-name {
+            font-size:clamp(2.6rem,4.8vw,5.2rem);
+            font-weight:900;
+            color:#fff;
+            letter-spacing:.14em;
+            line-height:1;
+            text-shadow:0 0 18px rgba(80,160,255,.7),0 0 50px rgba(80,160,255,.35),0 0 100px rgba(80,160,255,.15);
+            animation:namePulse 4s ease-in-out infinite alternate;
+        }
+        @keyframes namePulse {
+            from { text-shadow:0 0 15px rgba(80,160,255,.5),0 0 40px rgba(80,160,255,.2); }
+            to   { text-shadow:0 0 35px rgba(80,160,255,1),0 0 80px rgba(80,160,255,.55),0 0 130px rgba(80,160,255,.2); }
+        }
+        .brand-sub {
+            font-size:clamp(.8rem,1.4vw,1.25rem);
+            color:rgba(165,205,255,.8);
+            letter-spacing:.38em;
+            font-weight:300;
+            margin-top:.3em;
+        }
+        .brand-rule {
+            margin-top:.6em;
+            height:2px;
+            background:linear-gradient(90deg,transparent,#4da6ff 25%,#b0dcff 50%,#4da6ff 75%,transparent);
+            animation:ruleShimmer 3s ease-in-out infinite;
+        }
+        @keyframes ruleShimmer {
+            0%,100%{opacity:.45;transform:scaleX(.85);}
+            50%{opacity:1;transform:scaleX(1);}
+        }
+
+        /* ══════════ HEX BADGES ══════════ */
+        .hexes {
+            position:absolute;
+            top:calc(9% + clamp(2.6rem,4.8vw,5.2rem)*2.2);
+            left:4%;
+            display:flex; gap:clamp(.5rem,1.2vw,1.4rem);
+            animation:fadeSlideIn 1.4s .3s cubic-bezier(.16,1,.3,1) both;
+        }
+        .hex-item {
+            display:flex; flex-direction:column; align-items:center; gap:5px;
+            animation:hexBob var(--hd,3s) ease-in-out var(--hda,0s) infinite;
+        }
+        @keyframes hexBob {
+            0%,100%{transform:translateY(0);}
+            50%{transform:translateY(-9px);}
+        }
+        .hex-item:nth-child(1){--hd:3.2s;--hda:0s;}
+        .hex-item:nth-child(2){--hd:3.6s;--hda:.4s;}
+        .hex-item:nth-child(3){--hd:3.4s;--hda:.8s;}
+        .hex-item:nth-child(4){--hd:3.8s;--hda:1.2s;}
+        .hex-item:nth-child(5){--hd:3.1s;--hda:.6s;}
+
+        .hex-wrap {
+            position:relative;
+            width:clamp(52px,5.2vw,82px);
+            height:clamp(60px,6vw,95px);
+        }
+        .hex-wrap svg { position:absolute;inset:0;width:100%;height:100%; }
+        .hex-icon {
+            position:absolute; inset:0;
+            display:flex;align-items:center;justify-content:center;
+            font-size:clamp(17px,1.9vw,28px);
+            color:rgba(185,225,255,.95);
+            filter:drop-shadow(0 0 6px rgba(100,180,255,.6));
+        }
+        .hex-label {
+            font-size:clamp(6.5px,.68vw,10px);
+            color:rgba(155,210,255,.75);
+            letter-spacing:.13em;
+            font-weight:700;
+            text-align:center;
+        }
+
+        /* ══════════ ERP EMBLEM ══════════ */
+        .erp-emblem {
+            position:absolute; top:5%; right:5%;
+            width:clamp(185px,21vw,370px);
+            height:clamp(185px,21vw,370px);
+            animation:fadeSlideIn 1.5s .2s cubic-bezier(.16,1,.3,1) both;
+        }
+        .erp-emblem svg { width:100%;height:100%;overflow:visible; }
+
+        .ring-outer {
+            animation:rotateCW 28s linear infinite;
+            transform-box:fill-box; transform-origin:center;
+        }
+        .ring-mid {
+            animation:rotateCCW 18s linear infinite;
+            transform-box:fill-box; transform-origin:center;
+        }
+        .ring-inner {
+            animation:rotateCW 12s linear infinite;
+            transform-box:fill-box; transform-origin:center;
+        }
+        @keyframes rotateCW  { to{transform:rotate(360deg);} }
+        @keyframes rotateCCW { to{transform:rotate(-360deg);} }
+
+        .erp-text-group { animation:erpGlow 3s ease-in-out infinite alternate; }
+        @keyframes erpGlow {
+            from{filter:drop-shadow(0 0 8px rgba(100,180,255,.5));}
+            to  {filter:drop-shadow(0 0 25px rgba(100,180,255,1)) drop-shadow(0 0 50px rgba(100,180,255,.4));}
+        }
+        .icon-group { animation:iconPulse 4s ease-in-out infinite alternate; }
+        @keyframes iconPulse {
+            from{opacity:.75;}
+            to  {opacity:1;}
+        }
+
+        /* ══════════ LIGHT STREAK ══════════ */
+        .streak {
+            position:absolute; top:41%; left:0; right:0; height:3px;
+            background:linear-gradient(90deg,
+                transparent 0%, transparent 10%,
+                rgba(40,120,255,.08) 22%, rgba(80,180,255,.9) 43%,
+                rgba(160,230,255,1) 50%,
+                rgba(80,180,255,.9) 57%, rgba(40,120,255,.08) 78%,
+                transparent 90%, transparent 100%);
+            filter:blur(.8px);
+            animation:streakPulse 4s ease-in-out infinite;
+        }
+        .streak::after {
+            content:'';
+            position:absolute; inset:-5px 0;
+            background:inherit;
+            filter:blur(10px);
+            opacity:.45;
+        }
+        @keyframes streakPulse {
+            0%,100%{opacity:.4;transform:scaleX(.8);}
+            50%{opacity:1;transform:scaleX(1);}
+        }
+
+        /* ══════════ CITY SKYLINE ══════════ */
+        .skyline {
+            position:absolute; bottom:0; left:0; right:0;
+            animation:skyFade 5s ease-in-out infinite alternate;
+        }
+        .skyline svg { width:100%;display:block; }
+        @keyframes skyFade {
+            from{opacity:.35;}
+            to  {opacity:.65;}
+        }
+
+        /* ══════════ ARROWS ══════════ */
+        .arrows { position:absolute; bottom:14%; left:22%; width:56%; height:52%; overflow:hidden; }
+        .arrow {
+            position:absolute; bottom:0;
+            display:flex; flex-direction:column; align-items:center;
+            animation:arrowRise var(--ad,3s) ease-in var(--addel,0s) infinite;
+            opacity:0;
+        }
+        .arrow-head {
+            width:0;height:0;
+            border-left:5px solid transparent;
+            border-right:5px solid transparent;
+            border-bottom:9px solid rgba(100,185,255,.85);
+        }
+        .arrow-shaft {
+            width:2px;
+            background:linear-gradient(to top,transparent,rgba(100,185,255,.8));
+        }
+        @keyframes arrowRise {
+            0%  {opacity:0;transform:translateY(0);}
+            15% {opacity:.85;}
+            85% {opacity:.5;}
+            100%{opacity:0;transform:translateY(clamp(-160px,-28vh,-400px));}
+        }
+
+        /* ══════════ LOGIN CARD ══════════ */
+        .login-overlay {
+            position:relative; z-index:10;
+            min-height:100vh;
+            display:flex; align-items:center; justify-content:center;
+            padding:1rem;
+            pointer-events:none;
+        }
+        .login-card {
+            pointer-events:all;
+            background:rgba(4,12,45,.82);
+            backdrop-filter:blur(28px) saturate(160%);
+            -webkit-backdrop-filter:blur(28px) saturate(160%);
+            border:1px solid rgba(100,175,255,.2);
+            border-radius:20px;
+            padding:clamp(1.5rem,3vw,2.6rem);
+            width:100%; max-width:410px;
+            box-shadow:
+                0 0 0 1px rgba(100,175,255,.06),
+                0 8px 40px rgba(0,0,0,.55),
+                0 0 80px rgba(25,75,210,.22),
+                inset 0 1px 0 rgba(255,255,255,.06);
+            animation:cardIn .9s cubic-bezier(.16,1,.3,1);
+        }
+        @keyframes cardIn {
+            from{opacity:0;transform:translateY(45px) scale(.96);}
+            to  {opacity:1;transform:translateY(0) scale(1);}
+        }
+
+        .card-logo { text-align:center; margin-bottom:1.5rem; }
+        .logo-ring {
+            display:inline-flex; align-items:center; justify-content:center;
+            width:68px;height:68px; border-radius:50%;
+            background:linear-gradient(135deg,#122090,#1e44cc);
+            box-shadow:0 0 0 3px rgba(100,175,255,.14),0 0 28px rgba(50,110,255,.5);
+            margin-bottom:.9rem;
+            animation:logoPulse 3.5s ease-in-out infinite;
+        }
+        @keyframes logoPulse {
+            0%,100%{box-shadow:0 0 0 3px rgba(100,175,255,.12),0 0 20px rgba(50,110,255,.35);}
+            50%    {box-shadow:0 0 0 7px rgba(100,175,255,.22),0 0 45px rgba(50,110,255,.7);}
+        }
+        .logo-ring i { font-size:30px;color:#fff; }
+        .card-title   { font-size:1.45rem;font-weight:800;color:#fff;letter-spacing:.06em; }
+        .card-subtitle{ font-size:.72rem;color:rgba(155,200,255,.6);letter-spacing:.26em;margin-top:.2rem; }
+
+        .form-sep { height:1px;background:rgba(100,175,255,.12);margin:1.3rem 0; }
+
+        .form-group { margin-bottom:1rem; }
+        .form-lbl {
+            display:block;
+            font-size:.78rem;font-weight:600;
+            color:rgba(155,205,255,.78);
+            letter-spacing:.06em; margin-bottom:.4rem;
+        }
+        .form-inp {
+            display:block;width:100%;
+            padding:.65rem 1rem;
+            border-radius:10px;
+            border:1px solid rgba(100,175,255,.18);
+            background:rgba(8,25,85,.5);
+            color:#fff;font-size:.95rem;
+            outline:none;
+            transition:all .2s;
+        }
+        .form-inp:focus {
+            border-color:rgba(100,175,255,.6);
+            background:rgba(8,25,85,.7);
+            box-shadow:0 0 0 3px rgba(100,175,255,.1),0 0 18px rgba(100,175,255,.08);
+        }
+        .form-inp::placeholder { color:rgba(110,165,255,.3); }
+
+        .btn-login {
+            display:block;width:100%;
+            padding:.76rem;border-radius:10px;border:none;
+            background:linear-gradient(135deg,#1640cc 0%,#2860ff 100%);
+            color:#fff;font-size:.98rem;font-weight:700;letter-spacing:.06em;
+            cursor:pointer;
+            box-shadow:0 4px 22px rgba(25,75,220,.45),0 0 0 1px rgba(100,175,255,.14);
+            transition:all .22s;
+            margin-top:.4rem;
+        }
+        .btn-login:hover {
+            background:linear-gradient(135deg,#1e50df 0%,#3572ff 100%);
+            box-shadow:0 7px 32px rgba(25,75,220,.65),0 0 0 1px rgba(100,175,255,.28);
+            transform:translateY(-2px);
+        }
+        .btn-login:active { transform:translateY(0); }
+
+        .alert {
+            border-radius:10px;padding:.72rem 1rem;
+            margin-bottom:1rem;font-size:.85rem;
+        }
+        .alert-danger  { background:rgba(200,40,40,.18);border:1px solid rgba(255,100,100,.28);color:rgba(255,185,185,.88); }
+        .alert-success { background:rgba(40,175,100,.18);border:1px solid rgba(100,255,160,.28);color:rgba(180,255,210,.88); }
+
+        .card-footer-txt { text-align:center;margin-top:1rem;font-size:.7rem;color:rgba(90,140,255,.38); }
+
+        /* ══════════ RESPONSIVE ══════════ */
+        @media (max-width:900px) {
+            .brand,.hexes,.erp-emblem,.arrows { display:none; }
+            .streak { top:30%; }
+        }
+    </style>
 </head>
-<body class="d-flex align-items-center min-vh-100" style="background:#f0f4f8;">
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-5 col-lg-4">
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
-                    <div class="text-center mb-4">
-                        <div class="display-6 fw-bold text-primary mb-1">
-                            <i class="ti ti-building-skyscraper"></i>
-                        </div>
-                        <h2 class="fw-bold mb-0">SOLVIOR PROJECT</h2>
-                        <p class="text-muted small">Planéta Centrum Kft.</p>
-                    </div>
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% for category, message in messages %}
-                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">{{ message }}</div>
-                    {% endfor %}
-                    {% endwith %}
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label class="form-label">E-mail cím</label>
-                            <input type="email" name="email" class="form-control" required autofocus>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Jelszó</label>
-                            <input type="password" name="password" class="form-control" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="ti ti-login me-2"></i>Bejelentkezés
-                        </button>
-                    </form>
-                </div>
+<body>
+
+<!-- Háttér -->
+<div class="bg"></div>
+<canvas id="canvas-particles"></canvas>
+
+<!-- Jelenet elemek -->
+<div class="scene">
+
+    <!-- SOLVIOR branding -->
+    <div class="brand">
+        <div class="brand-name">SOLVIOR</div>
+        <div class="brand-sub">CRM SYSTEMS</div>
+        <div class="brand-rule"></div>
+    </div>
+
+    <!-- Hexagonális jellemzők -->
+    <div class="hexes">
+        <div class="hex-item">
+            <div class="hex-wrap">
+                <svg viewBox="0 0 100 115" fill="none">
+                    <polygon points="50,3 97,26 97,89 50,112 3,89 3,26"
+                             fill="rgba(18,55,175,.28)" stroke="rgba(100,180,255,.65)" stroke-width="2"/>
+                    <polygon points="50,3 97,26 97,89 50,112 3,89 3,26"
+                             fill="none" stroke="rgba(100,180,255,.18)" stroke-width="10" stroke-dasharray="14 6"/>
+                </svg>
+                <div class="hex-icon"><i class="ti ti-handshake"></i></div>
             </div>
+            <div class="hex-label">CRM</div>
+        </div>
+        <div class="hex-item">
+            <div class="hex-wrap">
+                <svg viewBox="0 0 100 115" fill="none">
+                    <polygon points="50,3 97,26 97,89 50,112 3,89 3,26"
+                             fill="rgba(18,55,175,.28)" stroke="rgba(100,180,255,.65)" stroke-width="2"/>
+                </svg>
+                <div class="hex-icon"><i class="ti ti-settings-2"></i></div>
+            </div>
+            <div class="hex-label">ERP</div>
+        </div>
+        <div class="hex-item">
+            <div class="hex-wrap">
+                <svg viewBox="0 0 100 115" fill="none">
+                    <polygon points="50,3 97,26 97,89 50,112 3,89 3,26"
+                             fill="rgba(18,55,175,.28)" stroke="rgba(100,180,255,.65)" stroke-width="2"/>
+                </svg>
+                <div class="hex-icon"><i class="ti ti-chart-bar"></i></div>
+            </div>
+            <div class="hex-label">ANALYTICS</div>
+        </div>
+        <div class="hex-item">
+            <div class="hex-wrap">
+                <svg viewBox="0 0 100 115" fill="none">
+                    <polygon points="50,3 97,26 97,89 50,112 3,89 3,26"
+                             fill="rgba(18,55,175,.28)" stroke="rgba(100,180,255,.65)" stroke-width="2"/>
+                </svg>
+                <div class="hex-icon"><i class="ti ti-users"></i></div>
+            </div>
+            <div class="hex-label">CUSTOMERS</div>
+        </div>
+        <div class="hex-item">
+            <div class="hex-wrap">
+                <svg viewBox="0 0 100 115" fill="none">
+                    <polygon points="50,3 97,26 97,89 50,112 3,89 3,26"
+                             fill="rgba(18,55,175,.28)" stroke="rgba(100,180,255,.65)" stroke-width="2"/>
+                </svg>
+                <div class="hex-icon"><i class="ti ti-target"></i></div>
+            </div>
+            <div class="hex-label">STRATEGY</div>
         </div>
     </div>
+
+    <!-- ERP körembléma -->
+    <div class="erp-emblem">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="cg" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%"   stop-color="#102080" stop-opacity=".88"/>
+                    <stop offset="70%"  stop-color="#070e35" stop-opacity=".82"/>
+                    <stop offset="100%" stop-color="#030819" stop-opacity=".75"/>
+                </radialGradient>
+                <radialGradient id="glowRad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%"   stop-color="rgba(100,180,255,.15)"/>
+                    <stop offset="100%" stop-color="transparent"/>
+                </radialGradient>
+                <filter id="gf" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="3" result="b"/>
+                    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <filter id="tf" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="5" result="b"/>
+                    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+            </defs>
+
+            <!-- Outer halo glow -->
+            <circle cx="200" cy="200" r="195" fill="url(#glowRad)"/>
+
+            <!-- Rotating outer ring -->
+            <g class="ring-outer" style="transform-origin:200px 200px;">
+                <circle cx="200" cy="200" r="188" fill="none"
+                        stroke="rgba(100,175,255,.38)" stroke-width="2"
+                        stroke-dasharray="10 7"/>
+                <!-- Ring dots -->
+                <circle cx="200" cy="12"  r="4.5" fill="rgba(130,200,255,.9)"/>
+                <circle cx="388" cy="200" r="4.5" fill="rgba(130,200,255,.9)"/>
+                <circle cx="200" cy="388" r="4.5" fill="rgba(130,200,255,.9)"/>
+                <circle cx="12"  cy="200" r="4.5" fill="rgba(130,200,255,.9)"/>
+                <circle cx="333" cy="67"  r="3"   fill="rgba(130,200,255,.6)"/>
+                <circle cx="333" cy="333" r="3"   fill="rgba(130,200,255,.6)"/>
+                <circle cx="67"  cy="333" r="3"   fill="rgba(130,200,255,.6)"/>
+                <circle cx="67"  cy="67"  r="3"   fill="rgba(130,200,255,.6)"/>
+            </g>
+
+            <!-- Counter-rotating mid ring -->
+            <g class="ring-mid" style="transform-origin:200px 200px;">
+                <circle cx="200" cy="200" r="168" fill="none"
+                        stroke="rgba(80,150,255,.2)" stroke-width="1.5"
+                        stroke-dasharray="5 9"/>
+            </g>
+
+            <!-- Inner rotating ring -->
+            <g class="ring-inner" style="transform-origin:200px 200px;">
+                <circle cx="200" cy="200" r="150" fill="none"
+                        stroke="rgba(100,175,255,.28)" stroke-width="1"
+                        stroke-dasharray="3 5"/>
+            </g>
+
+            <!-- Inner filled circle -->
+            <circle cx="200" cy="200" r="142" fill="url(#cg)"/>
+            <circle cx="200" cy="200" r="142" fill="none"
+                    stroke="rgba(100,175,255,.5)" stroke-width="1.5"/>
+
+            <!-- "ERP" text -->
+            <g class="erp-text-group">
+                <text x="200" y="225" text-anchor="middle"
+                      font-family="Arial Black,Arial,sans-serif"
+                      font-weight="900" font-size="78"
+                      fill="white" filter="url(#tf)">ERP</text>
+            </g>
+
+            <!-- Inner icons group (6 positions, r=92 from center) -->
+            <!-- top (200,108) -->
+            <g class="icon-group" filter="url(#gf)">
+                <!-- Bank/Institution -->
+                <g transform="translate(191,97)">
+                    <rect x="2" y="9" width="14" height="10" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.5" rx="1"/>
+                    <polyline points="0,9 9,1 18,9" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.5" stroke-linejoin="round"/>
+                    <rect x="5" y="12" width="2.5" height="7" fill="rgba(200,230,255,.85)"/>
+                    <rect x="10.5" y="12" width="2.5" height="7" fill="rgba(200,230,255,.85)"/>
+                </g>
+                <!-- top-right (282,153): chart-bar -->
+                <g transform="translate(273,142)">
+                    <rect x="0" y="11" width="4" height="7" fill="rgba(200,230,255,.85)"/>
+                    <rect x="6" y="6"  width="4" height="12" fill="rgba(200,230,255,.85)"/>
+                    <rect x="12" y="2" width="4" height="16" fill="rgba(200,230,255,.85)"/>
+                    <line x1="0" y1="18" x2="18" y2="18" stroke="rgba(200,230,255,.6)" stroke-width="1.2"/>
+                </g>
+                <!-- bottom-right (282,247): people/HR -->
+                <g transform="translate(273,237)">
+                    <circle cx="6"  cy="5" r="3.5" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.4"/>
+                    <path d="M0,18 C0,12 12,12 12,18" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.4"/>
+                    <circle cx="14" cy="5" r="3"   fill="none" stroke="rgba(200,230,255,.7)" stroke-width="1.2"/>
+                    <path d="M8,18 C8,13 20,13 20,18" fill="none" stroke="rgba(200,230,255,.7)" stroke-width="1.2"/>
+                </g>
+                <!-- bottom (200,292): gear -->
+                <g transform="translate(191,282)">
+                    <circle cx="9" cy="9" r="3.5" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.5"/>
+                    <circle cx="9" cy="9" r="7.5" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.5" stroke-dasharray="3.2 2.5"/>
+                </g>
+                <!-- bottom-left (118,247): target/bullseye -->
+                <g transform="translate(109,237)">
+                    <circle cx="9" cy="9" r="8"   fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.5"/>
+                    <circle cx="9" cy="9" r="4.5" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.5"/>
+                    <circle cx="9" cy="9" r="1.5" fill="rgba(200,230,255,.9)"/>
+                </g>
+                <!-- top-left (118,153): handshake -->
+                <g transform="translate(109,143)">
+                    <path d="M0,10 C2,6 5,4 9,7 C13,4 16,6 18,10" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.5" stroke-linecap="round"/>
+                    <path d="M3,10 L3,16 Q9,14 15,16 L15,10" fill="none" stroke="rgba(200,230,255,.9)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                </g>
+            </g>
+        </svg>
+    </div>
+
+    <!-- Fénysáv -->
+    <div class="streak"></div>
+
+    <!-- Felfelé mutató nyilak (JS tölti fel) -->
+    <div class="arrows" id="arrows-container"></div>
+
+    <!-- Várossilhouette -->
+    <div class="skyline">
+        <svg viewBox="0 0 1440 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <defs>
+                <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stop-color="rgba(80,165,255,.85)"/>
+                    <stop offset="100%" stop-color="rgba(40,90,210,.15)"/>
+                </linearGradient>
+            </defs>
+            <!-- Buildings outline -->
+            <polyline fill="none" stroke="url(#sg)" stroke-width="1.5" stroke-linejoin="miter"
+                points="
+                0,200 0,130 20,130 20,95 35,95 35,70 50,70 50,50 60,50 60,35 70,35 70,20
+                80,20 80,12 90,12 90,5 100,5 100,12 108,12 108,20 115,20 115,10 122,10
+                122,18 130,18 130,35 145,35 145,20 152,20 152,35 165,35 165,55 180,55
+                180,40 190,40 190,60 205,60 205,80 220,80 220,60 232,60 232,45 244,45
+                244,65 258,65 258,80 275,80 275,60 288,60 288,40 300,40 300,25 310,25
+                310,12 320,12 320,6 328,6 328,12 336,12 336,25 348,25 348,14 358,14
+                358,30 370,30 370,45 385,45 385,65 398,65 398,85"/>
+            <polyline fill="none" stroke="url(#sg)" stroke-width="1.5" stroke-linejoin="miter"
+                points="
+                410,200 410,105 428,105 428,75 445,75 445,95 462,95 462,52 472,52 472,35
+                482,35 482,18 492,18 492,8 500,8 500,2 508,2 508,8 516,8 516,18 526,18
+                526,35 536,35 536,52 548,52 548,70 562,70 562,52 572,52 572,35 582,35
+                582,22 592,22 592,40 608,40 608,60 625,60 625,80 642,80 642,60 658,60
+                658,80 678,80 678,100 695,100 695,80 715,80 715,100 730,100"/>
+            <polyline fill="none" stroke="url(#sg)" stroke-width="1.5" stroke-linejoin="miter"
+                points="
+                755,200 755,115 775,115 775,85 795,85 795,65 815,65 815,45 835,45 835,28
+                852,28 852,14 862,14 862,6 870,6 870,0 878,0 878,6 886,6 886,14 895,14
+                895,25 908,25 908,42 924,42 924,60 942,60 942,45 958,45 958,28 968,28
+                968,18 978,18 978,38 995,38 995,58 1015,58 1015,75 1035,75 1035,95
+                1055,95 1055,75 1078,75 1078,58 1100,58 1100,75 1120,75 1120,95
+                1142,95 1142,115 1160,115 1160,95 1182,95 1182,115 1200,115 1200,135
+                1220,135 1220,115 1242,115 1242,135 1262,135 1262,155 1282,155 1282,200"/>
+            <polyline fill="none" stroke="url(#sg)" stroke-width="1.5" stroke-linejoin="miter"
+                points="
+                1295,200 1295,158 1315,158 1315,142 1338,142 1338,158 1358,158
+                1358,148 1380,148 1380,162 1400,162 1400,172 1440,172 1440,200"/>
+            <!-- Window lights -->
+            <g fill="rgba(185,225,255,.6)" stroke="none">
+                <rect x="87"  y="18" width="2.5" height="2.5"/>
+                <rect x="97"  y="8"  width="2.5" height="2.5"/>
+                <rect x="119" y="14" width="2.5" height="2.5"/>
+                <rect x="306" y="16" width="2.5" height="2.5"/>
+                <rect x="316" y="8"  width="2.5" height="2.5"/>
+                <rect x="326" y="14" width="2.5" height="2.5"/>
+                <rect x="490" y="10" width="2.5" height="2.5"/>
+                <rect x="500" y="4"  width="2.5" height="2.5"/>
+                <rect x="860" y="8"  width="2.5" height="2.5"/>
+                <rect x="870" y="2"  width="2.5" height="2.5"/>
+                <rect x="878" y="8"  width="2.5" height="2.5"/>
+            </g>
+            <!-- Ground line -->
+            <line x1="0" y1="199" x2="1440" y2="199" stroke="rgba(80,165,255,.3)" stroke-width="1"/>
+        </svg>
+    </div>
+
+</div><!-- /scene -->
+
+<!-- Bejelentkezési kártya -->
+<div class="login-overlay">
+    <div class="login-card">
+        <div class="card-logo">
+            <div class="logo-ring"><i class="ti ti-building-skyscraper"></i></div>
+            <div class="card-title">SOLVIOR</div>
+            <div class="card-subtitle">CRM SYSTEMS — BEJELENTKEZÉS</div>
+        </div>
+        <div class="form-sep"></div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">{{ message }}</div>
+        {% endfor %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label class="form-lbl" for="email">E-MAIL CÍM</label>
+                <input type="email" id="email" name="email" class="form-inp"
+                       placeholder="felhasznalo@solvior.hu" required autofocus autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label class="form-lbl" for="password">JELSZÓ</label>
+                <input type="password" id="password" name="password" class="form-inp"
+                       placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-login">
+                BEJELENTKEZÉS
+            </button>
+        </form>
+
+        <div class="card-footer-txt">Planéta Centrum Kft. &copy; 2025 — SOLVIOR CRM</div>
+    </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+
+<script>
+/* ──────── PARTICLE SYSTEM ──────── */
+const canvas = document.getElementById('canvas-particles');
+const ctx    = canvas.getContext('2d');
+
+function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+const PCOUNT = 140;
+const particles = Array.from({length: PCOUNT}, () => ({
+    x:  Math.random() * innerWidth,
+    y:  Math.random() * innerHeight,
+    r:  Math.random() * 1.6 + 0.2,
+    vx: (Math.random() - 0.5) * 0.12,
+    vy: (Math.random() - 0.5) * 0.12,
+    base: Math.random() * 0.6 + 0.15,
+    ts:  Math.random() * 0.025 + 0.008,
+    tp:  Math.random() * Math.PI * 2,
+}));
+
+/* A few bright "star" particles */
+const STARS = Array.from({length: 18}, () => ({
+    x:  Math.random() * innerWidth,
+    y:  Math.random() * innerHeight * 0.7,
+    r:  Math.random() * 1.2 + 0.8,
+    ts: Math.random() * 0.04 + 0.01,
+    tp: Math.random() * Math.PI * 2,
+}));
+
+let tick = 0;
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    tick++;
+
+    particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width)  p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        const op = p.base * (0.55 + 0.45 * Math.sin(tick * p.ts + p.tp));
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(155,210,255,${op})`;
+        ctx.fill();
+        if (p.r > 1.1) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r * 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(100,180,255,${op * 0.12})`;
+            ctx.fill();
+        }
+    });
+
+    STARS.forEach(s => {
+        const op = 0.6 + 0.4 * Math.sin(tick * s.ts + s.tp);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(220,240,255,${op})`;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r * 4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(150,210,255,${op * 0.15})`;
+        ctx.fill();
+    });
+
+    requestAnimationFrame(draw);
+}
+draw();
+
+/* ──────── ARROWS ──────── */
+const ac = document.getElementById('arrows-container');
+const ARROW_N = 9;
+for (let i = 0; i < ARROW_N; i++) {
+    const el  = document.createElement('div');
+    el.className = 'arrow';
+    const x   = 4 + (i / (ARROW_N - 1)) * 92;
+    const dur = (2.4 + Math.random() * 2.2).toFixed(2);
+    const del = (Math.random() * 4).toFixed(2);
+    const h   = Math.round(38 + Math.random() * 58);
+    const op  = (.45 + Math.random() * .4).toFixed(2);
+    el.style.cssText = `left:${x}%;--ad:${dur}s;--addel:${del}s;animation-delay:${del}s;`;
+    el.innerHTML = `<div class="arrow-head" style="opacity:${op};border-bottom-color:rgba(${80+Math.round(Math.random()*40)},${170+Math.round(Math.random()*40)},255,.85);"></div>
+                    <div class="arrow-shaft" style="height:${h}px;opacity:${op};"></div>`;
+    ac.appendChild(el);
+}
+</script>
+
 </body>
 </html>

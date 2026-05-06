@@ -1,0 +1,44 @@
+{% extends 'base/layout.html' %}
+{% block title %}Excel import{% endblock %}
+{% block page_title %}Készlet importálása Excelből{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="ti ti-file-import me-2"></i>Excel import
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <h4 class="alert-title">Elvárt Excel formátum</h4>
+                    <p class="mb-1">Az Excel fájl első sora fejléc (kihagyva). Az oszlopok sorrendben:</p>
+                    <ol class="mb-0">
+                        <li><strong>Megnevezés</strong> (kötelező)</li>
+                        <li>Cikkszám (SKU)</li>
+                        <li>Mértékegység (alapértelmezett: db)</li>
+                        <li>Egységár (Ft)</li>
+                        <li>Készlet mennyiség</li>
+                        <li>Kategória</li>
+                    </ol>
+                </div>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label class="form-label">Excel fájl (.xlsx) <span class="text-danger">*</span></label>
+                        <input type="file" name="excel_file" class="form-control"
+                               accept=".xlsx,.xls" required>
+                        <div class="form-text">Csak .xlsx és .xls fájlok támogatottak.</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-upload me-1"></i>Importálás
+                        </button>
+                        <a href="{{ url_for('inventory.list') }}" class="btn btn-outline-secondary">Mégse</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

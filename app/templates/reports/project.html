@@ -1,0 +1,169 @@
+{% extends 'base/layout.html' %}
+{% block title %}Riport — {{ project.name }}{% endblock %}
+{% block page_title %}Projekt riport — {{ project.name }}{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="ti ti-arrow-left me-1"></i>Vissza a riportokhoz
+    </a>
+    <a href="{{ url_for('projects.detail', id=project.id) }}" class="btn btn-outline-primary btn-sm">
+        <i class="ti ti-folder me-1"></i>Projekt oldal
+    </a>
+</div>
+
+<!-- KPI kártyák -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-muted small">Szerződéses érték</div>
+                <div class="h4 mb-0">{{ "{:,.0f}".format(project.contract_value or 0) }} Ft</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-muted small">Kiállított számlák</div>
+                <div class="h4 mb-0 text-primary">{{ "{:,.0f}".format(project.total_invoiced) }} Ft</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card" style="border-color:#2fb344;">
+            <div class="card-body">
+                <div class="text-muted small">Befolyt bevétel</div>
+                <div class="h4 mb-0 text-success">{{ "{:,.0f}".format(project.total_received) }} Ft</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card" style="border-color:{% if project.profit >= 0 %}#2fb344{% else %}#d63939{% endif %};">
+            <div class="card-body">
+                <div class="text-muted small">Profit</div>
+                <div class="h4 mb-0 {% if project.profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    {{ "{:,.0f}".format(project.profit) }} Ft
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Projekt adatok -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Projekt adatok</h3></div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5 text-muted">Ügyfél</dt>
+                    <dd class="col-7">{{ project.client.name }}</dd>
+                    <dt class="col-5 text-muted">Státusz</dt>
+                    <dd class="col-7">
+                        <span class="badge {% if project.status == 'active' %}bg-green-lt{% elif project.status == 'completed' %}bg-blue-lt{% else %}bg-yellow-lt{% endif %}">
+                            {{ project.status }}
+                        </span>
+                    </dd>
+                    <dt class="col-5 text-muted">Kezdés</dt>
+                    <dd class="col-7">{{ project.start_date or '—' }}</dd>
+                    <dt class="col-5 text-muted">Befejezés</dt>
+                    <dd class="col-7">{{ project.end_date or '—' }}</dd>
+                    <dt class="col-5 text-muted">Kintlévőség</dt>
+                    <dd class="col-7 {% if project.outstanding > 0 %}text-danger{% else %}text-success{% endif %}">
+                        {{ "{:,.0f}".format(project.outstanding) }} Ft
+                    </dd>
+                    <dt class="col-5 text-muted">Alv. költ.</dt>
+                    <dd class="col-7 text-warning">{{ "{:,.0f}".format(project.total_subcontractor_cost) }} Ft</dd>
+                    <dt class="col-5 text-muted">Alv. fizetve</dt>
+                    <dd class="col-7">{{ "{:,.0f}".format(project.total_subcontractor_paid) }} Ft</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Készlet összesítő -->
+        {% if project.inventory_items %}
+        <div class="card mt-3">
+            <div class="card-header"><h3 class="card-title">Készlet összesítő</h3></div>
+            <div class="card-body">
+                {% set total_cost = namespace(value=0) %}
+                {% for pi in project.inventory_items %}
+                {% set total_cost.value = total_cost.value + (pi.quantity_used * (pi.item.unit_price or 0)) %}
+                {% endfor %}
+                <div class="text-muted small">Felhasznált anyagköltség</div>
+                <div class="h5 text-warning">{{ "{:,.0f}".format(total_cost.value) }} Ft</div>
+                <div class="small text-muted mt-2">{{ project.inventory_items|length }} különböző tétel</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Számlák bontása -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><h3 class="card-title">Számlák bontása</h3></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-vcenter">
+                    <thead>
+                        <tr><th>Számlaszám</th><th>Irány</th><th>Nettó</th><th>Esedékes</th><th>Státusz</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for i in project.invoices %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('invoices.detail', id=i.id) }}">{{ i.invoice_number }}</a>
+                        </td>
+                        <td>
+                            {% if i.direction == 'outgoing' %}
+                            <span class="badge bg-blue-lt">Kimenő</span>
+                            {% else %}
+                            <span class="badge bg-purple-lt">Bejövő</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-semibold">{{ "{:,.0f}".format(i.amount) }} Ft</td>
+                        <td class="text-muted">{{ i.due_date or '—' }}</td>
+                        <td>
+                            <span class="badge {% if i.status == 'paid' %}bg-success{% elif i.status == 'overdue' %}bg-danger{% else %}bg-warning{% endif %}">
+                                {% if i.status == 'paid' %}Fizetve{% elif i.status == 'overdue' %}Lejárt{% else %}Függő{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center text-muted">Nincs számla</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Alvállalkozói kifizetések -->
+        <div class="card mt-3">
+            <div class="card-header"><h3 class="card-title">Alvállalkozói kifizetések</h3></div>
+            <div class="table-responsive">
+                <table class="table table-sm table-vcenter">
+                    <thead>
+                        <tr><th>Alvállalkozó</th><th>Leírás</th><th>Összeg</th><th>Esedékes</th><th>Státusz</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for p in project.subcontractor_payments %}
+                    <tr>
+                        <td class="fw-semibold">{{ p.subcontractor.name }}</td>
+                        <td class="text-muted">{{ p.description or '—' }}</td>
+                        <td>{{ "{:,.0f}".format(p.amount) }} Ft</td>
+                        <td class="text-muted">{{ p.due_date or '—' }}</td>
+                        <td>
+                            <span class="badge {% if p.status == 'paid' %}bg-success{% elif p.status == 'overdue' %}bg-danger{% else %}bg-warning{% endif %}">
+                                {% if p.status == 'paid' %}Fizetve{% elif p.status == 'overdue' %}Lejárt{% else %}Függő{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center text-muted">Nincs kifizetés</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

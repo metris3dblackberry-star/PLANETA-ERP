@@ -1,0 +1,148 @@
+{% extends 'base/layout.html' %}
+{% block title %}Riportok{% endblock %}
+{% block page_title %}Összesített riportok{% endblock %}
+{% block content %}
+
+<div class="row g-3">
+    <!-- Ügyfélenkénti összesítő -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-building me-2"></i>Ügyfelek összesítője</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-vcenter">
+                    <thead>
+                        <tr>
+                            <th>Ügyfél</th>
+                            <th>Projektek</th>
+                            <th>Kiállított</th>
+                            <th>Befolyt</th>
+                            <th>Kintlévőség</th>
+                            <th>Teljesítés</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in client_stats %}
+                    <tr>
+                        <td class="fw-semibold">{{ row.client.name }}</td>
+                        <td>
+                            <span class="badge bg-blue-lt">{{ row.project_count }} projekt</span>
+                        </td>
+                        <td class="fw-semibold">{{ "{:,.0f}".format(row.invoiced) }} Ft</td>
+                        <td class="text-success">{{ "{:,.0f}".format(row.received) }} Ft</td>
+                        <td class="{% if row.outstanding > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ "{:,.0f}".format(row.outstanding) }} Ft
+                        </td>
+                        <td>
+                            {% if row.invoiced > 0 %}
+                            {% set pct = (row.received / row.invoiced * 100)|int %}
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:6px;">
+                                    <div class="progress-bar {% if pct == 100 %}bg-success{% elif pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                         style="width:{{ pct }}%"></div>
+                                </div>
+                                <span class="small text-muted">{{ pct }}%</span>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% for p in row.client.projects %}
+                            <a href="{{ url_for('reports.project_report', id=p.id) }}"
+                               class="btn btn-xs btn-outline-secondary" title="{{ p.name }}">
+                                <i class="ti ti-chart-bar"></i>
+                            </a>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">Nincs ügyfél</td></tr>
+                    {% endfor %}
+                    </tbody>
+                    {% if client_stats %}
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="2">Összesen</th>
+                            <th>{{ "{:,.0f}".format(client_stats|sum(attribute='invoiced')) }} Ft</th>
+                            <th class="text-success">{{ "{:,.0f}".format(client_stats|sum(attribute='received')) }} Ft</th>
+                            <th class="text-danger">{{ "{:,.0f}".format(client_stats|sum(attribute='outstanding')) }} Ft</th>
+                            <th colspan="2"></th>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alvállalkozói összesítő -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-users me-2"></i>Alvállalkozók összesítője</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-vcenter">
+                    <thead>
+                        <tr>
+                            <th>Alvállalkozó</th>
+                            <th>Szakterület</th>
+                            <th>Összes kötelezettség</th>
+                            <th>Teljesített</th>
+                            <th>Függő</th>
+                            <th>Fizetve</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in sub_stats %}
+                    <tr>
+                        <td class="fw-semibold">{{ row.sub.name }}</td>
+                        <td>
+                            {% if row.sub.specialty %}
+                            <span class="badge bg-purple-lt">{{ row.sub.specialty }}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="fw-semibold">{{ "{:,.0f}".format(row.total) }} Ft</td>
+                        <td class="text-success">{{ "{:,.0f}".format(row.paid) }} Ft</td>
+                        <td class="{% if row.pending > 0 %}text-warning{% else %}text-muted{% endif %}">
+                            {{ "{:,.0f}".format(row.pending) }} Ft
+                        </td>
+                        <td>
+                            {% if row.total > 0 %}
+                            {% set pct = (row.paid / row.total * 100)|int %}
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:6px;">
+                                    <div class="progress-bar {% if pct == 100 %}bg-success{% elif pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                         style="width:{{ pct }}%"></div>
+                                </div>
+                                <span class="small text-muted">{{ pct }}%</span>
+                            </div>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">Nincs alvállalkozó</td></tr>
+                    {% endfor %}
+                    </tbody>
+                    {% if sub_stats %}
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="2">Összesen</th>
+                            <th>{{ "{:,.0f}".format(sub_stats|sum(attribute='total')) }} Ft</th>
+                            <th class="text-success">{{ "{:,.0f}".format(sub_stats|sum(attribute='paid')) }} Ft</th>
+                            <th class="text-warning">{{ "{:,.0f}".format(sub_stats|sum(attribute='pending')) }} Ft</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

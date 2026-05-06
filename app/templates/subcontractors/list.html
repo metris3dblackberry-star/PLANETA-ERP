@@ -1,0 +1,56 @@
+{% extends 'base/layout.html' %}
+{% block title %}Alvállalkozók{% endblock %}
+{% block page_title %}Alvállalkozók{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-muted small">{{ subcontractors|length }} alvállalkozó</span>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('subcontractors.new_payment') }}" class="btn btn-outline-warning">
+            <i class="ti ti-cash me-1"></i>Kifizetés rögzítése
+        </a>
+        <a href="{{ url_for('subcontractors.new') }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>Új alvállalkozó
+        </a>
+    </div>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-vcenter">
+            <thead>
+                <tr>
+                    <th>Név</th>
+                    <th>Szakterület</th>
+                    <th>Kapcsolattartó</th>
+                    <th>Email</th>
+                    <th>Telefon</th>
+                    <th>Adószám</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for s in subcontractors %}
+            <tr>
+                <td class="fw-semibold">{{ s.name }}</td>
+                <td>
+                    {% if s.specialty %}
+                    <span class="badge bg-purple-lt">{{ s.specialty }}</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ s.contact_person or '—' }}</td>
+                <td>{{ s.email or '—' }}</td>
+                <td>{{ s.phone or '—' }}</td>
+                <td class="text-muted">{{ s.tax_number or '—' }}</td>
+                <td>
+                    <a href="{{ url_for('subcontractors.edit', id=s.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="ti ti-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">Nincs alvállalkozó rögzítve</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

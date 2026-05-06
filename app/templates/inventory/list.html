@@ -1,0 +1,62 @@
+{% extends 'base/layout.html' %}
+{% block title %}Készlet{% endblock %}
+{% block page_title %}Készletkezelés{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <span class="text-muted small">{{ items|length }} tétel</span>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('inventory.import_excel') }}" class="btn btn-outline-secondary">
+            <i class="ti ti-file-import me-1"></i>Excel import
+        </a>
+        <a href="{{ url_for('inventory.new') }}" class="btn btn-primary">
+            <i class="ti ti-plus me-1"></i>Új tétel
+        </a>
+    </div>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-vcenter">
+            <thead>
+                <tr>
+                    <th>Megnevezés</th>
+                    <th>Cikkszám</th>
+                    <th>Kategória</th>
+                    <th>Egység</th>
+                    <th>Egységár</th>
+                    <th>Készlet</th>
+                    <th>Felhasznált</th>
+                    <th>Maradék</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="fw-semibold">{{ item.name }}</td>
+                <td class="text-muted">{{ item.sku or '—' }}</td>
+                <td>
+                    {% if item.category %}
+                    <span class="badge bg-blue-lt">{{ item.category }}</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ item.unit }}</td>
+                <td>{{ "{:,.0f}".format(item.unit_price or 0) }} Ft</td>
+                <td>{{ item.total_stock }}</td>
+                <td class="text-warning">{{ item.used_total }}</td>
+                <td class="{% if item.remaining < 0 %}text-danger fw-semibold{% elif item.remaining == 0 %}text-muted{% else %}text-success{% endif %}">
+                    {{ item.remaining }}
+                </td>
+                <td>
+                    <a href="{{ url_for('inventory.edit', id=item.id) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="ti ti-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="9" class="text-center text-muted py-4">Nincs készlet rögzítve</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -326,6 +326,32 @@
 
         .card-footer-txt { text-align:center;margin-top:1rem;font-size:.7rem;color:rgba(90,140,255,.38); }
 
+        /* ══════════ TABS ══════════ */
+        .tabs {
+            display:flex; border-radius:10px; overflow:hidden;
+            border:1px solid rgba(100,175,255,.18);
+            margin-bottom:1.3rem;
+        }
+        .tab-btn {
+            flex:1; padding:.6rem; border:none; background:transparent;
+            color:rgba(140,195,255,.6); font-size:.82rem; font-weight:700;
+            letter-spacing:.08em; cursor:pointer;
+            transition:all .22s;
+        }
+        .tab-btn.active {
+            background:rgba(30,80,200,.5);
+            color:#fff;
+            box-shadow:inset 0 0 12px rgba(100,175,255,.15);
+        }
+        .tab-btn:not(.active):hover { color:rgba(180,220,255,.8); background:rgba(100,175,255,.06); }
+
+        .panel { display:none; }
+        .panel.active { display:block; animation:panelIn .3s ease; }
+        @keyframes panelIn {
+            from { opacity:0; transform:translateY(6px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
         /* ══════════ RESPONSIVE ══════════ */
         @media (max-width:900px) {
             .brand,.hexes,.erp-emblem,.arrows { display:none; }
@@ -584,37 +610,98 @@
 
 </div><!-- /scene -->
 
-<!-- Bejelentkezési kártya -->
+<!-- Kártya -->
 <div class="login-overlay">
     <div class="login-card">
         <div class="card-logo">
             <div class="logo-ring"><i class="ti ti-building-skyscraper"></i></div>
             <div class="card-title">SOLVIOR</div>
-            <div class="card-subtitle">CRM SYSTEMS — BEJELENTKEZÉS</div>
+            <div class="card-subtitle">CRM SYSTEMS</div>
         </div>
-        <div class="form-sep"></div>
 
+        <!-- Tab váltó -->
+        <div class="tabs">
+            <button class="tab-btn {% if panel == 'login' %}active{% endif %}"
+                    onclick="switchTab('login')" id="tab-login">
+                BEJELENTKEZÉS
+            </button>
+            <button class="tab-btn {% if panel == 'register' %}active{% endif %}"
+                    onclick="switchTab('register')" id="tab-register">
+                REGISZTRÁCIÓ
+            </button>
+        </div>
+
+        <!-- Flash üzenetek -->
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
         <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}">{{ message }}</div>
         {% endfor %}
         {% endwith %}
 
-        <form method="POST">
-            <div class="form-group">
-                <label class="form-lbl" for="email">E-MAIL CÍM</label>
-                <input type="email" id="email" name="email" class="form-inp"
-                       placeholder="felhasznalo@solvior.hu" required autofocus autocomplete="email">
+        <!-- ── BEJELENTKEZÉS PANEL ── -->
+        <div class="panel {% if panel == 'login' %}active{% endif %}" id="panel-login">
+            <form method="POST" action="{{ url_for('auth.login') }}">
+                <div class="form-group">
+                    <label class="form-lbl" for="email">E-MAIL CÍM</label>
+                    <input type="email" id="email" name="email" class="form-inp"
+                           placeholder="felhasznalo@solvior.hu" required
+                           {% if panel == 'login' %}autofocus{% endif %}
+                           autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label class="form-lbl" for="password">JELSZÓ</label>
+                    <input type="password" id="password" name="password" class="form-inp"
+                           placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn-login">BEJELENTKEZÉS</button>
+            </form>
+            <div style="text-align:center;margin-top:.9rem;">
+                <span style="font-size:.75rem;color:rgba(130,180,255,.45);">Még nincs fiókja?</span>
+                <button onclick="switchTab('register')"
+                        style="background:none;border:none;cursor:pointer;font-size:.75rem;
+                               color:rgba(130,180,255,.75);text-decoration:underline;margin-left:.3rem;">
+                    Regisztráljon
+                </button>
             </div>
-            <div class="form-group">
-                <label class="form-lbl" for="password">JELSZÓ</label>
-                <input type="password" id="password" name="password" class="form-inp"
-                       placeholder="••••••••" required autocomplete="current-password">
+        </div>
+
+        <!-- ── REGISZTRÁCIÓ PANEL ── -->
+        <div class="panel {% if panel == 'register' %}active{% endif %}" id="panel-register">
+            <form method="POST" action="{{ url_for('auth.register') }}">
+                <div class="form-group">
+                    <label class="form-lbl" for="reg_name">TELJES NÉV</label>
+                    <input type="text" id="reg_name" name="reg_name" class="form-inp"
+                           placeholder="Kovács János" required
+                           {% if panel == 'register' %}autofocus{% endif %}
+                           autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label class="form-lbl" for="reg_email">E-MAIL CÍM</label>
+                    <input type="email" id="reg_email" name="reg_email" class="form-inp"
+                           placeholder="felhasznalo@solvior.hu" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label class="form-lbl" for="reg_password">JELSZÓ</label>
+                    <input type="password" id="reg_password" name="reg_password" class="form-inp"
+                           placeholder="minimum 6 karakter" required minlength="6"
+                           autocomplete="new-password">
+                </div>
+                <div class="form-group">
+                    <label class="form-lbl" for="reg_confirm">JELSZÓ MEGERŐSÍTÉSE</label>
+                    <input type="password" id="reg_confirm" name="reg_confirm" class="form-inp"
+                           placeholder="••••••••" required autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn-login">REGISZTRÁCIÓ & BELÉPÉS</button>
+            </form>
+            <div style="text-align:center;margin-top:.9rem;">
+                <span style="font-size:.75rem;color:rgba(130,180,255,.45);">Már van fiókja?</span>
+                <button onclick="switchTab('login')"
+                        style="background:none;border:none;cursor:pointer;font-size:.75rem;
+                               color:rgba(130,180,255,.75);text-decoration:underline;margin-left:.3rem;">
+                    Jelentkezzen be
+                </button>
             </div>
-            <button type="submit" class="btn-login">
-                BEJELENTKEZÉS
-            </button>
-        </form>
+        </div>
 
         <div class="card-footer-txt">Planéta Centrum Kft. &copy; 2025 — SOLVIOR CRM</div>
     </div>
@@ -692,6 +779,16 @@ function draw() {
     requestAnimationFrame(draw);
 }
 draw();
+
+/* ──────── TAB SWITCH ──────── */
+function switchTab(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+    const f = document.querySelector('#panel-' + name + ' input');
+    if (f) f.focus();
+}
 
 /* ──────── ARROWS ──────── */
 const ac = document.getElementById('arrows-container');

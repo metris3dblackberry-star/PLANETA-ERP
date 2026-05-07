@@ -23,25 +23,6 @@
                 radial-gradient(ellipse 50% 60% at 85% 15%, rgba(30,70,220,0.18) 0%, transparent 60%),
                 radial-gradient(ellipse 70% 50% at 70% 90%, rgba(120,30,160,0.15) 0%, transparent 60%),
                 linear-gradient(160deg, #060d28 0%, #081230 20%, #0a1840 50%, #0c1848 70%, #060c25 100%);
-            animation: portalBgBreath 12s ease-in-out infinite alternate;
-        }
-        @keyframes portalBgBreath {
-            from { filter: brightness(1) hue-rotate(0deg); }
-            to   { filter: brightness(1.06) hue-rotate(6deg); }
-        }
-        /* Subtle grid drift on body pseudo */
-        body::before {
-            content: '';
-            position: fixed; inset: 0; z-index: 0; pointer-events: none;
-            background-image:
-                linear-gradient(rgba(60,120,255,0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(60,120,255,0.025) 1px, transparent 1px);
-            background-size: 60px 60px;
-            animation: portalGridDrift 24s linear infinite;
-        }
-        @keyframes portalGridDrift {
-            from { background-position: 0 0; }
-            to   { background-position: 60px 60px; }
         }
         /* Particle canvas */
         #portal-bg-canvas {

@@ -67,6 +67,23 @@ def edit(id):
     return render_template('subcontractors/form.html', subcontractor=s)
 
 
+@subcontractors_bp.route('/payments')
+@login_required
+def payments_list():
+    status = request.args.get('status', 'all')
+    q = SubcontractorPayment.query
+    if status != 'all':
+        q = q.filter_by(status=status)
+    payments = q.order_by(SubcontractorPayment.issue_date.desc()).all()
+    total = sum(float(p.amount or 0) for p in payments)
+    paid = sum(float(p.amount or 0) for p in payments if p.status == 'paid')
+    pending = sum(float(p.amount or 0) for p in payments if p.status != 'paid')
+    return render_template('subcontractors/payments_list.html',
+                           payments=payments, status=status,
+                           total=total, paid=paid, pending=pending,
+                           today=date.today())
+
+
 @subcontractors_bp.route('/payments/new', methods=['GET', 'POST'])
 @login_required
 def new_payment():

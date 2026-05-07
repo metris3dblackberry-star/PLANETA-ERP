@@ -115,9 +115,16 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if 'subcontractors.new_payment' in request.endpoint %}active{% endif %}"
-                           href="{{ url_for('subcontractors.new_payment') }}">
+                        <a class="nav-link {% if request.endpoint == 'subcontractors.payments_list' %}active{% endif %}"
+                           href="{{ url_for('subcontractors.payments_list') }}">
                             <span class="nav-link-icon"><i class="ti ti-cash"></i></span>
+                            <span class="nav-link-title">Kifizetések</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'subcontractors.new_payment' %}active{% endif %}"
+                           href="{{ url_for('subcontractors.new_payment') }}">
+                            <span class="nav-link-icon"><i class="ti ti-plus"></i></span>
                             <span class="nav-link-title">Kifizetés rögzítése</span>
                         </a>
                     </li>

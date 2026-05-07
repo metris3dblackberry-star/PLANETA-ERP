@@ -255,6 +255,13 @@
         if (!paused) requestAnimationFrame(draw);
     });
 
+    /* Pause animation while any Bootstrap modal is open */
+    document.addEventListener('show.bs.modal', function() { paused = true; });
+    document.addEventListener('hidden.bs.modal', function() {
+        paused = false;
+        requestAnimationFrame(draw);
+    });
+
     function draw(now) {
         if (paused) return;
         requestAnimationFrame(draw);

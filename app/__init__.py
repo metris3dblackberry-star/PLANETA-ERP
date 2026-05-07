@@ -16,6 +16,7 @@ def create_app():
     if app.config['SQLALCHEMY_DATABASE_URI'].startswith('postgres://'):
         app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB max upload
 
     # SMTP / SendGrid-compatible email settings
     app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', '')
@@ -66,5 +67,21 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        # Auto-migrate: add pdf columns to invoices if they don't exist yet
+        try:
+            from sqlalchemy import text, inspect as sa_inspect
+            inspector = sa_inspect(db.engine)
+            if inspector.has_table('invoices'):
+                existing = {c['name'] for c in inspector.get_columns('invoices')}
+                dialect = db.engine.dialect.name
+                blob_type = 'BYTEA' if dialect == 'postgresql' else 'BLOB'
+                with db.engine.connect() as conn:
+                    if 'pdf_data' not in existing:
+                        conn.execute(text(f'ALTER TABLE invoices ADD COLUMN pdf_data {blob_type}'))
+                    if 'pdf_filename' not in existing:
+                        conn.execute(text('ALTER TABLE invoices ADD COLUMN pdf_filename VARCHAR(255)'))
+                    conn.commit()
+        except Exception:
+            pass  # fresh install: create_all handles it
 
     return app

@@ -67,6 +67,14 @@ def new():
             created_by=current_user.id
         )
         db.session.add(invoice)
+        db.session.flush()  # get invoice.id before commit
+
+        # PDF feltöltés
+        pdf_file = request.files.get('pdf_file')
+        if pdf_file and pdf_file.filename and pdf_file.filename.lower().endswith('.pdf'):
+            invoice.pdf_data = pdf_file.read()
+            invoice.pdf_filename = pdf_file.filename
+
         db.session.commit()
 
         # Email értesítő az ügyfélnek
@@ -225,6 +233,11 @@ def edit(id):
         invoice.notes = request.form.get('notes')
         if request.form.get('due_date'):
             invoice.due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()
+        # PDF csere (csak ha új fájl érkezett)
+        pdf_file = request.files.get('pdf_file')
+        if pdf_file and pdf_file.filename and pdf_file.filename.lower().endswith('.pdf'):
+            invoice.pdf_data = pdf_file.read()
+            invoice.pdf_filename = pdf_file.filename
         db.session.commit()
         flash('Számla frissítve!', 'success')
         return redirect(url_for('invoices.detail', id=invoice.id))
@@ -240,3 +253,29 @@ def delete(id):
     db.session.commit()
     flash('Számla törölve!', 'success')
     return redirect(url_for('invoices.list'))
+
+
+@invoices_bp.route('/<int:id>/pdf-upload')
+@login_required
+def download_uploaded_pdf(id):
+    invoice = Invoice.query.get_or_404(id)
+    if not invoice.pdf_data:
+        flash('Nincs feltöltött PDF ehhez a számlához.', 'danger')
+        return redirect(url_for('invoices.detail', id=id))
+    return send_file(
+        io.BytesIO(invoice.pdf_data),
+        as_attachment=True,
+        download_name=invoice.pdf_filename or f'{invoice.invoice_number}_szamla.pdf',
+        mimetype='application/pdf',
+    )
+
+
+@invoices_bp.route('/<int:id>/pdf-upload/delete', methods=['POST'])
+@login_required
+def delete_uploaded_pdf(id):
+    invoice = Invoice.query.get_or_404(id)
+    invoice.pdf_data = None
+    invoice.pdf_filename = None
+    db.session.commit()
+    flash('Feltöltött PDF törölve.', 'success')
+    return redirect(url_for('invoices.detail', id=id))

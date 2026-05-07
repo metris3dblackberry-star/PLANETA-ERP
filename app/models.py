@@ -119,6 +119,8 @@ class Invoice(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     notification_sent = db.Column(db.Boolean, default=False)
+    pdf_data = db.Column(db.LargeBinary, nullable=True)
+    pdf_filename = db.Column(db.String(255), nullable=True)
 
 
 class SubcontractorPayment(db.Model):

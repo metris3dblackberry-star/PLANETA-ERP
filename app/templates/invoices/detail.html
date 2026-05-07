@@ -9,6 +9,9 @@
         <i class="ti ti-arrow-left me-1"></i>Vissza a listára
     </a>
     <div class="d-flex gap-2">
+        <a href="{{ url_for('invoices.pdf', id=invoice.id) }}" class="btn btn-outline-secondary">
+            <i class="ti ti-file-download me-1"></i>PDF letöltés
+        </a>
         {% if invoice.status != 'paid' %}
         <form method="POST" action="{{ url_for('invoices.mark_paid', id=invoice.id) }}">
             <button class="btn btn-success" onclick="return confirm('Kifizetettnek jelöl?')">

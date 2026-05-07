@@ -77,6 +77,35 @@
 </div>
 
 <div class="row g-3">
+    {% if project_deadlines %}
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-calendar-exclamation me-2"></i>Projekt határidő figyelmeztetések</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-vcenter">
+                    <thead><tr><th>Projekt</th><th>Ügyfél</th><th>Határidő</th><th>Jelzés</th></tr></thead>
+                    <tbody>
+                    {% for row in project_deadlines %}
+                    <tr>
+                        <td><a href="{{ url_for('projects.detail', id=row.project.id) }}">{{ row.project.name }}</a></td>
+                        <td class="text-muted">{{ row.project.client.name }}</td>
+                        <td>{{ row.project.end_date }}</td>
+                        <td>
+                            <span class="badge bg-{{ row.state.level }}">
+                                {{ row.state.label }}{% if row.state.level == 'warning' %}: {{ row.state.days }} nap{% else %}: {{ row.state.days }} napja{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Cash flow chart -->
     <div class="col-lg-8">
         <div class="card">
@@ -125,6 +154,14 @@
                     <tr>
                         <td><a href="{{ url_for('projects.detail', id=p.id) }}">{{ p.name }}</a></td>
                         <td class="text-muted">{{ p.client.name }}</td>
+                        <td>
+                            {% set deadline = project_deadline_state(p) %}
+                            {% if deadline %}
+                            <span class="badge bg-{{ deadline.level }}">{{ p.end_date }}</span>
+                            {% else %}
+                            <span class="text-muted">{{ p.end_date or 'â€”' }}</span>
+                            {% endif %}
+                        </td>
                         <td>{{ "{:,.0f}".format(p.total_invoiced) }} Ft</td>
                         <td class="text-success">{{ "{:,.0f}".format(p.total_received) }} Ft</td>
                     </tr>

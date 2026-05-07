@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import login_required, current_user
-from app.models import Project, Client, Invoice, SubcontractorPayment, ProjectInventory, Subcontractor
+from app.models import Project, Client, Invoice, SubcontractorPayment, ProjectInventory, Subcontractor, InventoryItem
 from app import db
 from datetime import datetime
 
@@ -50,7 +50,13 @@ def new():
 def detail(id):
     project = Project.query.get_or_404(id)
     subcontractors = Subcontractor.query.filter_by(is_active=True).all()
-    return render_template('projects/detail.html', project=project, subcontractors=subcontractors)
+    inventory_items = InventoryItem.query.order_by(InventoryItem.name).all()
+    return render_template(
+        'projects/detail.html',
+        project=project,
+        subcontractors=subcontractors,
+        inventory_items=inventory_items,
+    )
 
 
 @projects_bp.route('/<int:id>/edit', methods=['GET', 'POST'])

@@ -3,6 +3,12 @@
 {% block page_title %}Összesített riportok{% endblock %}
 {% block content %}
 
+<div class="d-flex justify-content-end mb-3">
+    <a href="{{ url_for('reports.export') }}" class="btn btn-primary">
+        <i class="ti ti-file-spreadsheet me-1"></i>Excel export
+    </a>
+</div>
+
 <div class="row g-3">
     <!-- Ügyfélenkénti összesítő -->
     <div class="col-12">

@@ -17,7 +17,16 @@ def create_app():
         app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # Mailgun
+    # SMTP / SendGrid-compatible email settings
+    app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', '')
+    app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', '587'))
+    app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
+    app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
+    app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() in ('1', 'true', 'yes', 'on')
+    app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() in ('1', 'true', 'yes', 'on')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
+
+    # Optional Mailgun fallback
     app.config['MAILGUN_API_KEY'] = os.environ.get('MAILGUN_API_KEY', '')
     app.config['MAILGUN_DOMAIN'] = os.environ.get('MAILGUN_DOMAIN', '')
     app.config['MAILGUN_FROM'] = os.environ.get('MAILGUN_FROM', 'noreply@solvior.ee')
@@ -43,6 +52,7 @@ def create_app():
     from app.views.invoices import invoices_bp
     from app.views.reports import reports_bp
     from app.views.inventory import inventory_bp
+    from app.views.admin import admin_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -52,6 +62,7 @@ def create_app():
     app.register_blueprint(invoices_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(inventory_bp)
+    app.register_blueprint(admin_bp)
 
     with app.app_context():
         db.create_all()

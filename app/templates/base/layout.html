@@ -99,6 +99,18 @@
                             <span class="nav-link-title">Riportok</span>
                         </a>
                     </li>
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item mt-2">
+                        <span class="nav-link-title text-white-50" style="font-size:0.7rem; padding: 0 0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Admin</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin' in request.endpoint %}active{% endif %}"
+                           href="{{ url_for('admin.users') }}">
+                            <span class="nav-link-icon"><i class="ti ti-shield-lock"></i></span>
+                            <span class="nav-link-title">Felhasználók</span>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
                 <div class="mt-auto pb-3">
                     <ul class="navbar-nav">

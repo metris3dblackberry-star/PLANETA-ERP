@@ -35,8 +35,8 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Projekt</label>
-                            <select name="project_id" class="form-select">
+                            <label class="form-label">Projekt <span class="text-danger">*</span></label>
+                            <select name="project_id" class="form-select" required>
                                 <option value="">— Nincs projekt —</option>
                                 {% for p in projects %}
                                 <option value="{{ p.id }}"
@@ -50,7 +50,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Ügyfél</label>
-                            <select name="client_id" class="form-select">
+                            <select name="client_id" class="form-select" required>
                                 <option value="">— Nincs ügyfél —</option>
                                 {% for c in clients %}
                                 <option value="{{ c.id }}"

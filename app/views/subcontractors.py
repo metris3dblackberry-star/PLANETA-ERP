@@ -11,8 +11,20 @@ subcontractors_bp = Blueprint('subcontractors', __name__, url_prefix='/subcontra
 @subcontractors_bp.route('/')
 @login_required
 def list():
-    subs = Subcontractor.query.filter_by(is_active=True).order_by(Subcontractor.name).all()
-    return render_template('subcontractors/list.html', subcontractors=subs)
+    q = (request.args.get('q') or '').strip()
+    query = Subcontractor.query.filter_by(is_active=True)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            Subcontractor.name.ilike(like)
+            | Subcontractor.email.ilike(like)
+            | Subcontractor.phone.ilike(like)
+            | Subcontractor.contact_person.ilike(like)
+            | Subcontractor.specialty.ilike(like)
+            | Subcontractor.tax_number.ilike(like)
+        )
+    subs = query.order_by(Subcontractor.name).all()
+    return render_template('subcontractors/list.html', subcontractors=subs, q=q)
 
 
 @subcontractors_bp.route('/new', methods=['GET', 'POST'])

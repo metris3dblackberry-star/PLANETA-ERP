@@ -2,6 +2,7 @@ from flask import Blueprint, render_template
 from flask_login import login_required
 from app.models import Project, Invoice, Client, Subcontractor, SubcontractorPayment
 from app import db
+from app.views.maintenance import deadline_alert_projects, project_deadline_state, update_overdue_invoices
 from sqlalchemy import func
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
@@ -12,6 +13,7 @@ main_bp = Blueprint('main', __name__)
 @main_bp.route('/')
 @login_required
 def dashboard():
+    update_overdue_invoices()
     # Stats
     total_projects = Project.query.filter_by(status='active').count()
     total_clients = Client.query.filter_by(is_active=True).count()
@@ -50,6 +52,7 @@ def dashboard():
     active_projects = Project.query.filter_by(status='active').order_by(
         Project.created_at.desc()
     ).limit(5).all()
+    project_deadlines = deadline_alert_projects()
 
     # Cash flow havi bontás (utolsó 6 hónap)
     cashflow_data = []
@@ -86,5 +89,7 @@ def dashboard():
         recent_invoices=recent_invoices,
         overdue_invoices=overdue_invoices,
         active_projects=active_projects,
+        project_deadlines=project_deadlines,
+        project_deadline_state=project_deadline_state,
         cashflow_data=cashflow_data
     )

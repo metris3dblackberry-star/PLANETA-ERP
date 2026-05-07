@@ -76,20 +76,24 @@ class Project(db.Model):
     inventory_items = db.relationship('ProjectInventory', backref='project', lazy=True)
 
     @property
+    def contract_value_f(self):
+        return float(self.contract_value or 0)
+
+    @property
     def total_invoiced(self):
-        return sum(float(i.amount) for i in self.invoices if i.direction == 'outgoing')
+        return sum(float(i.amount or 0) for i in self.invoices if i.direction == 'outgoing')
 
     @property
     def total_received(self):
-        return sum(float(i.amount) for i in self.invoices if i.direction == 'outgoing' and i.status == 'paid')
+        return sum(float(i.amount or 0) for i in self.invoices if i.direction == 'outgoing' and i.status == 'paid')
 
     @property
     def total_subcontractor_cost(self):
-        return sum(float(p.amount) for p in self.subcontractor_payments)
+        return sum(float(p.amount or 0) for p in self.subcontractor_payments)
 
     @property
     def total_subcontractor_paid(self):
-        return sum(float(p.amount) for p in self.subcontractor_payments if p.status == 'paid')
+        return sum(float(p.amount or 0) for p in self.subcontractor_payments if p.status == 'paid')
 
     @property
     def outstanding(self):

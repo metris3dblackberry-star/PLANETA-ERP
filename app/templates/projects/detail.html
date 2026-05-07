@@ -181,7 +181,7 @@
 
                 {% if project.contract_value and project.contract_value > 0 %}
                 <hr class="my-2">
-                {% set completion = [(project.total_invoiced / project.contract_value * 100)|int, 100]|min %}
+                {% set completion = [(project.total_invoiced / (project.contract_value|float) * 100)|int, 100]|min %}
                 <div class="d-flex justify-content-between small mb-1">
                     <span class="text-muted">Szerződés teljesítés</span>
                     <span>{{ completion }}%</span>

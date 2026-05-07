@@ -238,7 +238,7 @@
     resize();
     window.addEventListener('resize', resize);
 
-    var PCOUNT = 80;
+    var PCOUNT = 55;
     var particles = [];
     for (var i = 0; i < PCOUNT; i++) {
         particles.push({
@@ -254,7 +254,7 @@
     }
 
     var STARS = [];
-    for (var j = 0; j < 12; j++) {
+    for (var j = 0; j < 8; j++) {
         STARS.push({
             x:  Math.random() * window.innerWidth,
             y:  Math.random() * window.innerHeight * 0.8,
@@ -265,9 +265,23 @@
     }
 
     var tick = 0;
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    var lastTime = 0;
+    var FPS_INTERVAL = 1000 / 24; /* cap at 24 fps */
+    var paused = false;
+
+    document.addEventListener('visibilitychange', function() {
+        paused = document.hidden;
+        if (!paused) requestAnimationFrame(draw);
+    });
+
+    function draw(now) {
+        if (paused) return;
+        requestAnimationFrame(draw);
+        if (!now || now - lastTime < FPS_INTERVAL) return;
+        lastTime = now;
         tick++;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         for (var k = 0; k < particles.length; k++) {
             var p = particles[k];
@@ -301,10 +315,8 @@
             ctx.fillStyle = 'rgba(150,210,255,' + (sop * 0.12) + ')';
             ctx.fill();
         }
-
-        requestAnimationFrame(draw);
     }
-    draw();
+    requestAnimationFrame(draw);
 })();
 </script>
 </body>

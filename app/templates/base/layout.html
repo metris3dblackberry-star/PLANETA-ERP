@@ -28,8 +28,8 @@
         #portal-bg-canvas {
             position: fixed; inset: 0; z-index: 0; pointer-events: none;
         }
-        /* Layout layers above canvas */
-        .wrapper { position: relative; z-index: 1; }
+        /* Layout layers above canvas — no z-index so Bootstrap modals work */
+        .wrapper { position: relative; }
         /* Transparent page areas so canvas shows through */
         .page-wrapper { background: transparent !important; }
         .page-body    { background: transparent !important; }

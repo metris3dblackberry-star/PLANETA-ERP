@@ -2,13 +2,25 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from dotenv import load_dotenv
+from pathlib import Path
 import os
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 
+
+def _get_embed_allowed_origins() -> list[str]:
+    raw = os.environ.get('EMBED_ALLOWED_ORIGINS') or os.environ.get('EMBED_ALLOWED_ORIGIN', '')
+    values = [item.strip() for item in raw.split(',') if item.strip()]
+
+    return values
+
 def create_app():
+    env_path = Path(__file__).resolve().parent.parent / '.env'
+    load_dotenv(env_path)
+
     app = Flask(__name__)
 
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'solvior-secret-2024')
@@ -31,6 +43,18 @@ def create_app():
     app.config['MAILGUN_API_KEY'] = os.environ.get('MAILGUN_API_KEY', '')
     app.config['MAILGUN_DOMAIN'] = os.environ.get('MAILGUN_DOMAIN', '')
     app.config['MAILGUN_FROM'] = os.environ.get('MAILGUN_FROM', 'noreply@solvior.ee')
+
+    @app.after_request
+    def allow_shell_embedding(response):
+        allowed_origins = _get_embed_allowed_origins()
+        request_origin = request.host_url.rstrip('/')
+        if not allowed_origins and request_origin.startswith(('http://127.0.0.1:5102', 'http://localhost:5102')):
+            allowed_origins = ['http://127.0.0.1:5100']
+        if allowed_origins:
+            response.headers.pop('X-Frame-Options', None)
+            origins = ' '.join(allowed_origins)
+            response.headers['Content-Security-Policy'] = f"frame-ancestors 'self' {origins}"
+        return response
 
     db.init_app(app)
     login_manager.init_app(app)

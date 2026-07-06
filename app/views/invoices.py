@@ -1,12 +1,8 @@
 import io
+from datetime import date, datetime
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, send_file
-from flask_login import login_required, current_user
-from app.models import Invoice, Project, Client
-from app.email_helper import notify_invoice_created, notify_invoice_paid
-from app import db
-from app.views.maintenance import update_overdue_invoices
-from datetime import datetime, date
+from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
+from flask_login import current_user, login_required
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
@@ -15,7 +11,26 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
+from app import db
+from app.email_helper import notify_invoice_created, notify_invoice_paid
+from app.models import Client, Invoice, Project
+from app.views.maintenance import update_overdue_invoices
+
 invoices_bp = Blueprint('invoices', __name__, url_prefix='/invoices')
+
+CURRENCY_SUFFIX = {
+    'HUF': 'Ft',
+    'EUR': 'EUR',
+    'USD': 'USD',
+}
+
+
+def _format_money(amount, currency='HUF'):
+    value = float(amount or 0)
+    code = (currency or 'HUF').upper()
+    if code == 'HUF':
+        return f"{value:,.0f} Ft".replace(',', ' ')
+    return f"{value:,.2f} {CURRENCY_SUFFIX.get(code, code)}".replace(',', ' ').replace('.', ',')
 
 
 def next_invoice_number():
@@ -32,12 +47,12 @@ def list():
     update_overdue_invoices()
     direction = request.args.get('direction', 'all')
     status = request.args.get('status', 'all')
-    q = Invoice.query
+    query = Invoice.query
     if direction != 'all':
-        q = q.filter_by(direction=direction)
+        query = query.filter_by(direction=direction)
     if status != 'all':
-        q = q.filter_by(status=status)
-    invoices = q.order_by(Invoice.created_at.desc()).all()
+        query = query.filter_by(status=status)
+    invoices = query.order_by(Invoice.created_at.desc()).all()
     return render_template('invoices/list.html', invoices=invoices, direction=direction, status=status)
 
 
@@ -64,12 +79,12 @@ def new():
             due_date=datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date() if request.form.get('due_date') else None,
             status=request.form.get('status', 'pending'),
             notes=request.form.get('notes'),
-            created_by=current_user.id
+            currency=(request.form.get('currency') or 'HUF').upper(),
+            created_by=current_user.id,
         )
         db.session.add(invoice)
-        db.session.flush()  # get invoice.id before commit
+        db.session.flush()
 
-        # PDF feltöltés
         pdf_file = request.files.get('pdf_file')
         if pdf_file and pdf_file.filename and pdf_file.filename.lower().endswith('.pdf'):
             invoice.pdf_data = pdf_file.read()
@@ -77,15 +92,14 @@ def new():
 
         db.session.commit()
 
-        # Email értesítő az ügyfélnek
         if invoice.direction == 'outgoing' and not invoice.notification_sent:
             invoice.notification_sent = notify_invoice_created(invoice)
             db.session.commit()
 
         flash(f'Számla {invoice.invoice_number} létrehozva!', 'success')
         return redirect(url_for('invoices.detail', id=invoice.id))
-    return render_template('invoices/form.html', projects=projects, clients=clients,
-                           next_number=next_invoice_number(), invoice=None)
+
+    return render_template('invoices/form.html', projects=projects, clients=clients, next_number=next_invoice_number(), invoice=None)
 
 
 @invoices_bp.route('/<int:id>')
@@ -156,6 +170,7 @@ def pdf(id):
         ['Kiállítás dátuma', invoice.issue_date or '-'],
         ['Fizetési határidő', invoice.due_date or '-'],
         ['Státusz', status_labels.get(invoice.status, invoice.status)],
+        ['Pénznem', invoice.currency or 'HUF'],
     ], colWidths=[45 * mm, 110 * mm])
     header.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), font_name),
@@ -172,9 +187,9 @@ def pdf(id):
     story.append(Spacer(1, 7 * mm))
 
     amounts = Table([
-        ['Nettó összeg', f'{net:,.0f} Ft'],
-        [f'ÁFA ({float(invoice.vat_rate or 0):.0f}%)', f'{vat:,.0f} Ft'],
-        ['Bruttó összeg', f'{gross:,.0f} Ft'],
+        ['Nettó összeg', _format_money(net, invoice.currency)],
+        [f'ÁFA ({float(invoice.vat_rate or 0):.0f}%)', _format_money(vat, invoice.currency)],
+        ['Bruttó összeg', _format_money(gross, invoice.currency)],
     ], colWidths=[85 * mm, 70 * mm])
     amounts.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), font_name),
@@ -231,18 +246,20 @@ def edit(id):
         invoice.description = request.form.get('description')
         invoice.status = request.form.get('status')
         invoice.notes = request.form.get('notes')
-        if request.form.get('due_date'):
-            invoice.due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()
-        # PDF csere (csak ha új fájl érkezett)
+        invoice.currency = (request.form.get('currency') or 'HUF').upper()
+        invoice.issue_date = datetime.strptime(request.form.get('issue_date'), '%Y-%m-%d').date() if request.form.get('issue_date') else None
+        invoice.due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date() if request.form.get('due_date') else None
+
         pdf_file = request.files.get('pdf_file')
         if pdf_file and pdf_file.filename and pdf_file.filename.lower().endswith('.pdf'):
             invoice.pdf_data = pdf_file.read()
             invoice.pdf_filename = pdf_file.filename
+
         db.session.commit()
         flash('Számla frissítve!', 'success')
         return redirect(url_for('invoices.detail', id=invoice.id))
-    return render_template('invoices/form.html', projects=projects, clients=clients,
-                           invoice=invoice, next_number=invoice.invoice_number)
+
+    return render_template('invoices/form.html', projects=projects, clients=clients, invoice=invoice, next_number=invoice.invoice_number)
 
 
 @invoices_bp.route('/<int:id>/delete', methods=['POST'])

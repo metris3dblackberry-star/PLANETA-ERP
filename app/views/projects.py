@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
-from flask_login import login_required, current_user
-from app.models import Project, Client, Invoice, SubcontractorPayment, Subcontractor, InventoryItem
-from app import db
 from datetime import datetime, date as date_type
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
+from app import db
+from app.models import Client, InventoryItem, Invoice, Project, Subcontractor, SubcontractorPayment
 
 projects_bp = Blueprint('projects', __name__, url_prefix='/projects')
 
@@ -29,8 +31,9 @@ def new():
             client_id=request.form.get('client_id'),
             status=request.form.get('status', 'active'),
             contract_value=request.form.get('contract_value') or 0,
+            currency=request.form.get('currency', 'HUF'),
             notes=request.form.get('notes'),
-            created_by=current_user.id
+            created_by=current_user.id,
         )
         start = request.form.get('start_date')
         end = request.form.get('end_date')
@@ -51,16 +54,19 @@ def detail(id):
     project = Project.query.get_or_404(id)
     subcontractors = Subcontractor.query.filter_by(is_active=True).all()
     inventory_items = InventoryItem.query.order_by(InventoryItem.name).all()
+    invoices = Invoice.query.filter_by(project_id=project.id).order_by(Invoice.issue_date.desc(), Invoice.created_at.desc()).all()
     today = date_type.today().isoformat()
     invoiced_gross = sum(
-        float(i.amount_with_vat or i.amount)
-        for i in project.invoices if i.direction == 'outgoing'
+        float(i.amount_with_vat or i.amount or 0)
+        for i in invoices
+        if i.direction == 'outgoing' and i.status != 'cancelled'
     )
     return render_template(
         'projects/detail.html',
         project=project,
         subcontractors=subcontractors,
         inventory_items=inventory_items,
+        invoices=invoices,
         today=today,
         invoiced_gross=invoiced_gross,
     )
@@ -92,6 +98,7 @@ def quick_invoice(id):
         amount=amount,
         vat_rate=vat_rate,
         amount_with_vat=round(amount * (1 + vat_rate / 100), 2),
+        currency=request.form.get('currency') or project.currency or 'HUF',
         description=request.form.get('description', ''),
         issue_date=datetime.strptime(issue_str, '%Y-%m-%d').date() if issue_str else now.date(),
         due_date=datetime.strptime(due_str, '%Y-%m-%d').date() if due_str else None,
@@ -117,6 +124,7 @@ def quick_payment(id):
         project_id=project.id,
         subcontractor_id=request.form.get('subcontractor_id'),
         amount=float(raw_amount) if raw_amount else 0.0,
+        currency=request.form.get('currency') or project.currency or 'HUF',
         description=request.form.get('description', ''),
         invoice_ref=request.form.get('invoice_ref', ''),
         issue_date=datetime.strptime(issue_str, '%Y-%m-%d').date() if issue_str else now.date(),
@@ -140,13 +148,12 @@ def edit(id):
         project.client_id = request.form.get('client_id')
         project.status = request.form.get('status')
         project.contract_value = request.form.get('contract_value') or 0
+        project.currency = request.form.get('currency', 'HUF')
         project.notes = request.form.get('notes')
         start = request.form.get('start_date')
         end = request.form.get('end_date')
-        if start:
-            project.start_date = datetime.strptime(start, '%Y-%m-%d').date()
-        if end:
-            project.end_date = datetime.strptime(end, '%Y-%m-%d').date()
+        project.start_date = datetime.strptime(start, '%Y-%m-%d').date() if start else None
+        project.end_date = datetime.strptime(end, '%Y-%m-%d').date() if end else None
         db.session.commit()
         flash('Projekt frissítve!', 'success')
         return redirect(url_for('projects.detail', id=project.id))
@@ -157,6 +164,12 @@ def edit(id):
 @login_required
 def delete(id):
     project = Project.query.get_or_404(id)
+    for inventory_item in list(project.inventory_items):
+        db.session.delete(inventory_item)
+    for payment in list(project.subcontractor_payments):
+        db.session.delete(payment)
+    for invoice in list(project.invoices):
+        db.session.delete(invoice)
     db.session.delete(project)
     db.session.commit()
     flash('Projekt törölve!', 'success')

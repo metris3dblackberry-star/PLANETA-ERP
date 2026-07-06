@@ -1,9 +1,11 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
-from flask_login import login_required, current_user
-from app.models import Subcontractor, SubcontractorPayment, Project
-from app.email_helper import notify_subcontractor_payment
+from datetime import date, datetime
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import login_required
+
 from app import db
-from datetime import datetime, date
+from app.email_helper import notify_subcontractor_payment
+from app.models import Invoice, Project, Subcontractor, SubcontractorPayment
 
 subcontractors_bp = Blueprint('subcontractors', __name__, url_prefix='/subcontractors')
 
@@ -39,7 +41,7 @@ def new():
             tax_number=request.form.get('tax_number'),
             contact_person=request.form.get('contact_person'),
             specialty=request.form.get('specialty'),
-            notes=request.form.get('notes')
+            notes=request.form.get('notes'),
         )
         db.session.add(s)
         db.session.commit()
@@ -78,10 +80,15 @@ def payments_list():
     total = sum(float(p.amount or 0) for p in payments)
     paid = sum(float(p.amount or 0) for p in payments if p.status == 'paid')
     pending = sum(float(p.amount or 0) for p in payments if p.status != 'paid')
-    return render_template('subcontractors/payments_list.html',
-                           payments=payments, status=status,
-                           total=total, paid=paid, pending=pending,
-                           today=date.today())
+    return render_template(
+        'subcontractors/payments_list.html',
+        payments=payments,
+        status=status,
+        total=total,
+        paid=paid,
+        pending=pending,
+        today=date.today(),
+    )
 
 
 @subcontractors_bp.route('/payments/new', methods=['GET', 'POST'])
@@ -89,15 +96,21 @@ def payments_list():
 def new_payment():
     projects = Project.query.filter_by(status='active').order_by(Project.name).all()
     subs = Subcontractor.query.filter_by(is_active=True).order_by(Subcontractor.name).all()
+    invoices = Invoice.query.filter(
+        Invoice.direction == 'incoming',
+        Invoice.status.in_(['pending', 'overdue'])
+    ).order_by(Invoice.issue_date.desc(), Invoice.created_at.desc()).all()
+
     if request.method == 'POST':
         p = SubcontractorPayment(
             project_id=request.form.get('project_id'),
             subcontractor_id=request.form.get('subcontractor_id'),
             amount=float(request.form.get('amount', 0)),
+            currency=request.form.get('currency', 'HUF'),
             description=request.form.get('description'),
             invoice_ref=request.form.get('invoice_ref'),
             status=request.form.get('status', 'pending'),
-            notes=request.form.get('notes')
+            notes=request.form.get('notes'),
         )
         if request.form.get('due_date'):
             p.due_date = datetime.strptime(request.form.get('due_date'), '%Y-%m-%d').date()
@@ -108,7 +121,13 @@ def new_payment():
         notify_subcontractor_payment(p)
         flash('Kifizetés rögzítve!', 'success')
         return redirect(url_for('subcontractors.list'))
-    return render_template('subcontractors/payment_form.html', projects=projects, subcontractors=subs)
+
+    return render_template(
+        'subcontractors/payment_form.html',
+        projects=projects,
+        subcontractors=subs,
+        invoices=invoices,
+    )
 
 
 @subcontractors_bp.route('/payments/<int:id>/mark-paid', methods=['POST'])

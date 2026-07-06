@@ -3,103 +3,41 @@
 {% block page_title %}{{ project.name }}{% endblock %}
 
 {% block content %}
-
-<!-- Top action bar -->
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="d-flex align-items-center gap-2">
-        {% set status_map = {'active':'Aktív','completed':'Befejezett','paused':'Szünetel','cancelled':'Törölve'} %}
+        {% set status_map = {'active':'Aktív','completed':'Befejezett','paused':'Szünetel','cancelled':'Törölt'} %}
         {% set status_color = {'active':'success','completed':'primary','paused':'warning','cancelled':'danger'} %}
-        <span class="badge bg-{{ status_color.get(project.status, 'secondary') }}-lt fs-6 px-2 py-1">
-            {{ status_map.get(project.status, project.status) }}
-        </span>
-        {% if project.client %}
-        <span class="text-muted"><i class="ti ti-building me-1"></i>{{ project.client.name }}</span>
-        {% endif %}
+        <span class="badge bg-{{ status_color.get(project.status, 'secondary') }}-lt fs-6 px-2 py-1">{{ status_map.get(project.status, project.status) }}</span>
+        {% if project.client %}<span class="text-muted"><i class="ti ti-building me-1"></i>{{ project.client.name }}</span>{% endif %}
     </div>
     <div class="d-flex gap-2">
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quickInvoiceModal">
-            <i class="ti ti-file-plus me-1"></i>Gyors számla
-        </button>
-        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#quickPaymentModal">
-            <i class="ti ti-cash me-1"></i>Kifizetés
-        </button>
-        <a href="{{ url_for('projects.edit', id=project.id) }}" class="btn btn-outline-secondary">
-            <i class="ti ti-edit me-1"></i>Szerkesztés
-        </a>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quickInvoiceModal"><i class="ti ti-file-plus me-1"></i>Gyors számla</button>
+        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#quickPaymentModal"><i class="ti ti-cash me-1"></i>Kifizetés</button>
+        <a href="{{ url_for('projects.edit', id=project.id) }}" class="btn btn-outline-secondary"><i class="ti ti-edit me-1"></i>Szerkesztés</a>
     </div>
 </div>
 
-<!-- 6 stat cards -->
 <div class="row g-3 mb-4">
-    <div class="col-6 col-lg-2">
-        <div class="card" style="border-left:4px solid #1a3a5c;">
-            <div class="card-body py-2 px-3">
-                <div class="text-muted small">Szerződéses érték</div>
-                <div class="h5 mb-0">{{ "{:,.0f}".format(project.contract_value or 0) }} Ft</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-2">
-        <div class="card" style="border-left:4px solid #206bc4;">
-            <div class="card-body py-2 px-3">
-                <div class="text-muted small">Kiállított</div>
-                <div class="h5 mb-0 text-primary">{{ "{:,.0f}".format(project.total_invoiced) }} Ft</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-2">
-        <div class="card" style="border-left:4px solid #2fb344;">
-            <div class="card-body py-2 px-3">
-                <div class="text-muted small">Befolyt</div>
-                <div class="h5 mb-0 text-success">{{ "{:,.0f}".format(project.total_received) }} Ft</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-2">
-        <div class="card" style="border-left:4px solid #d63939;">
-            <div class="card-body py-2 px-3">
-                <div class="text-muted small">Kintlévőség</div>
-                <div class="h5 mb-0 {% if project.outstanding > 0 %}text-danger{% else %}text-muted{% endif %}">
-                    {{ "{:,.0f}".format(project.outstanding) }} Ft
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-2">
-        <div class="card" style="border-left:4px solid #f59f00;">
-            <div class="card-body py-2 px-3">
-                <div class="text-muted small">Alvállalkozói</div>
-                <div class="h5 mb-0 text-warning">{{ "{:,.0f}".format(project.total_subcontractor_cost) }} Ft</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-2">
-        <div class="card" style="border-left:4px solid {% if project.profit >= 0 %}#2fb344{% else %}#d63939{% endif %};">
-            <div class="card-body py-2 px-3">
-                <div class="text-muted small">Profit</div>
-                <div class="h5 mb-0 {% if project.profit >= 0 %}text-success{% else %}text-danger{% endif %}">
-                    {{ "{:,.0f}".format(project.profit) }} Ft
-                </div>
-            </div>
-        </div>
-    </div>
+    <div class="col-6 col-lg-2"><div class="card"><div class="card-body py-2 px-3"><div class="text-muted small">Szerződéses érték</div><div class="h5 mb-0">{{ "{:,.0f}".format(project.contract_value or 0) if (project.currency or 'HUF') == 'HUF' else "{:,.2f}".format(project.contract_value or 0) }} {{ project.currency or 'HUF' }}</div></div></div></div>
+    <div class="col-6 col-lg-2"><div class="card"><div class="card-body py-2 px-3"><div class="text-muted small">Kiállított</div><div class="h5 mb-0 text-primary">{{ "{:,.0f}".format(project.total_invoiced) if (project.currency or 'HUF') == 'HUF' else "{:,.2f}".format(project.total_invoiced) }} {{ project.currency or 'HUF' }}</div></div></div></div>
+    <div class="col-6 col-lg-2"><div class="card"><div class="card-body py-2 px-3"><div class="text-muted small">Befolyt</div><div class="h5 mb-0 text-success">{{ "{:,.0f}".format(project.total_received) if (project.currency or 'HUF') == 'HUF' else "{:,.2f}".format(project.total_received) }} {{ project.currency or 'HUF' }}</div></div></div></div>
+    <div class="col-6 col-lg-2"><div class="card"><div class="card-body py-2 px-3"><div class="text-muted small">Kintlévőség</div><div class="h5 mb-0 {% if project.outstanding > 0 %}text-danger{% else %}text-muted{% endif %}">{{ "{:,.0f}".format(project.outstanding) if (project.currency or 'HUF') == 'HUF' else "{:,.2f}".format(project.outstanding) }} {{ project.currency or 'HUF' }}</div></div></div></div>
+    <div class="col-6 col-lg-2"><div class="card"><div class="card-body py-2 px-3"><div class="text-muted small">Alvállalkozói</div><div class="h5 mb-0 text-warning">{{ "{:,.0f}".format(project.total_subcontractor_cost) if (project.currency or 'HUF') == 'HUF' else "{:,.2f}".format(project.total_subcontractor_cost) }} {{ project.currency or 'HUF' }}</div></div></div></div>
+    <div class="col-6 col-lg-2"><div class="card"><div class="card-body py-2 px-3"><div class="text-muted small">Profit</div><div class="h5 mb-0 {% if project.profit >= 0 %}text-success{% else %}text-danger{% endif %}">{{ "{:,.0f}".format(project.profit) if (project.currency or 'HUF') == 'HUF' else "{:,.2f}".format(project.profit) }} {{ project.currency or 'HUF' }}</div></div></div></div>
 </div>
 
 <div class="row g-3">
-    <!-- Left col: info + P&L -->
     <div class="col-lg-4">
-
-        <!-- Project info -->
         <div class="card mb-3">
-            <div class="card-header">
-                <h3 class="card-title"><i class="ti ti-info-circle me-2"></i>Projekt adatok</h3>
-            </div>
+            <div class="card-header"><h3 class="card-title"><i class="ti ti-info-circle me-2"></i>Projekt adatok</h3></div>
             <div class="card-body">
                 <dl class="row mb-0 small">
                     <dt class="col-5 text-muted">Kezdés</dt>
-                    <dd class="col-7">{{ project.start_date or '—' }}</dd>
+                    <dd class="col-7">{{ project.start_date or '-' }}</dd>
                     <dt class="col-5 text-muted">Befejezés</dt>
-                    <dd class="col-7">{{ project.end_date or '—' }}</dd>
+                    <dd class="col-7">{{ project.end_date or '-' }}</dd>
+                    <dt class="col-5 text-muted">Pénznem</dt>
+                    <dd class="col-7">{{ project.currency or 'HUF' }}</dd>
                     <dt class="col-5 text-muted">Létrehozva</dt>
                     <dd class="col-7">{{ project.created_at.strftime('%Y.%m.%d') }}</dd>
                     {% if project.description %}
@@ -111,394 +49,93 @@
                 <hr class="my-2">
                 <p class="text-muted small mb-0">{{ project.notes }}</p>
                 {% endif %}
-            </div>
-        </div>
-
-        <!-- P&L card -->
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title"><i class="ti ti-report-money me-2"></i>P&L összesítő</h3>
-            </div>
-            <div class="card-body">
-
-                <!-- Revenue -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between small mb-1">
-                        <span class="fw-semibold text-success">Bevétel</span>
-                        <span>{{ "{:,.0f}".format(project.total_received) }} / {{ "{:,.0f}".format(project.total_invoiced) }} Ft</span>
-                    </div>
-                    {% if project.total_invoiced > 0 %}
-                    {% set rev_pct = [(project.total_received / project.total_invoiced * 100)|int, 100]|min %}
-                    <div class="progress mb-1" style="height:10px; border-radius:5px;">
-                        <div class="progress-bar bg-success" style="width:{{ rev_pct }}%"></div>
-                    </div>
-                    {% else %}
-                    <div class="progress mb-1" style="height:10px; border-radius:5px;"><div class="progress-bar" style="width:0%"></div></div>
-                    {% endif %}
-                    {% if project.outstanding > 0 %}
-                    <div class="small text-danger"><i class="ti ti-alert-circle me-1"></i>Kintlévőség: {{ "{:,.0f}".format(project.outstanding) }} Ft</div>
-                    {% endif %}
-                </div>
-
-                <!-- Costs -->
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between small mb-1">
-                        <span class="fw-semibold text-warning">Kiadás (alvállalkozói)</span>
-                        <span>{{ "{:,.0f}".format(project.total_subcontractor_paid) }} / {{ "{:,.0f}".format(project.total_subcontractor_cost) }} Ft</span>
-                    </div>
-                    {% if project.total_subcontractor_cost > 0 %}
-                    {% set cost_pct = [(project.total_subcontractor_paid / project.total_subcontractor_cost * 100)|int, 100]|min %}
-                    <div class="progress mb-1" style="height:10px; border-radius:5px;">
-                        <div class="progress-bar bg-warning" style="width:{{ cost_pct }}%"></div>
-                    </div>
-                    {% set pending_cost = project.total_subcontractor_cost - project.total_subcontractor_paid %}
-                    {% if pending_cost > 0 %}
-                    <div class="small text-warning"><i class="ti ti-clock me-1"></i>Függő: {{ "{:,.0f}".format(pending_cost) }} Ft</div>
-                    {% endif %}
-                    {% else %}
-                    <div class="progress mb-1" style="height:10px; border-radius:5px;"><div class="progress-bar" style="width:0%"></div></div>
-                    {% endif %}
-                </div>
-
-                <hr class="my-2">
-
-                <!-- Net profit -->
-                {% set margin = (project.profit / project.total_received * 100)|int if project.total_received > 0 else 0 %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        <div class="text-muted small">Nettó profit</div>
-                        <div class="h4 mb-0 {% if project.profit >= 0 %}text-success{% else %}text-danger{% endif %}">
-                            {{ "{:,.0f}".format(project.profit) }} Ft
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="text-muted small">Margin</div>
-                        <div class="h4 mb-0 {% if margin >= 20 %}text-success{% elif margin >= 0 %}text-warning{% else %}text-danger{% endif %}">
-                            {{ margin }}%
-                        </div>
-                    </div>
-                </div>
-
-                {% if project.contract_value and project.contract_value > 0 %}
-                <hr class="my-2">
-                {% set completion = [(project.total_invoiced / (project.contract_value|float) * 100)|int, 100]|min %}
-                <div class="d-flex justify-content-between small mb-1">
-                    <span class="text-muted">Szerződés teljesítés</span>
-                    <span>{{ completion }}%</span>
-                </div>
-                <div class="progress" style="height:6px; border-radius:5px;">
-                    <div class="progress-bar bg-primary" style="width:{{ completion }}%"></div>
-                </div>
-                {% endif %}
+                <form method="POST" action="{{ url_for('projects.delete', id=project.id) }}" class="mt-3" onsubmit="return confirm('Biztosan törli a projektet és a kapcsolódó tételeket?');">
+                    <button type="submit" class="btn btn-outline-danger btn-sm"><i class="ti ti-trash me-1"></i>Projekt törlése</button>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Right col: tabs -->
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header p-0">
-                <ul class="nav nav-tabs px-3 pt-2" id="projectTabs">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#" onclick="switchTab('invoices', this); return false;">
-                            <i class="ti ti-file-invoice me-1"></i>Számlák
-                            <span class="badge bg-blue-lt ms-1">{{ project.invoices|length }}</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="switchTab('payments', this); return false;">
-                            <i class="ti ti-cash me-1"></i>Kifizetések
-                            <span class="badge bg-yellow-lt ms-1">{{ project.subcontractor_payments|length }}</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="switchTab('inventory', this); return false;">
-                            <i class="ti ti-package me-1"></i>Készlet
-                            <span class="badge bg-purple-lt ms-1">{{ project.inventory_items|length }}</span>
-                        </a>
-                    </li>
-                </ul>
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title">Számlák</h3></div>
+            <div class="table-responsive">
+                <table class="table table-hover table-vcenter mb-0">
+                    <thead>
+                        <tr><th>Számlaszám</th><th>Irány</th><th>Bruttó</th><th>Esedékes</th><th>Státusz</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    {% for i in invoices %}
+                    <tr>
+                        <td><a href="{{ url_for('invoices.detail', id=i.id) }}" class="fw-semibold">{{ i.invoice_number }}</a></td>
+                        <td>{% if i.direction == 'outgoing' %}<span class="badge bg-blue-lt">Kimenő</span>{% else %}<span class="badge bg-purple-lt">Bejövő</span>{% endif %}</td>
+                        <td>{{ "{:,.0f}".format(i.amount_with_vat or i.amount or 0) if (i.currency or project.currency or 'HUF') == 'HUF' else "{:,.2f}".format(i.amount_with_vat or i.amount or 0) }} {{ i.currency or project.currency or 'HUF' }}</td>
+                        <td>{{ i.due_date or '-' }}</td>
+                        <td><span class="badge {% if i.status == 'paid' %}bg-success{% elif i.status == 'overdue' %}bg-danger{% elif i.status == 'cancelled' %}bg-secondary{% else %}bg-warning{% endif %}">{% if i.status == 'paid' %}Fizetve{% elif i.status == 'overdue' %}Lejárt{% elif i.status == 'cancelled' %}Törölve{% else %}Függőben{% endif %}</span></td>
+                        <td class="text-end"><a href="{{ url_for('invoices.detail', id=i.id) }}" class="btn btn-sm btn-outline-secondary"><i class="ti ti-eye"></i></a></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted py-4">Nincs számla ehhez a projekthez.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
+        </div>
 
-            <!-- TAB: Invoices -->
-            <div id="tab-invoices" class="tab-content-panel">
-                <div class="table-responsive">
-                    <table class="table table-hover table-vcenter mb-0">
-                        <thead>
-                            <tr>
-                                <th>Számlaszám</th>
-                                <th>Irány</th>
-                                <th>Nettó</th>
-                                <th>Bruttó</th>
-                                <th>Esedékes</th>
-                                <th>Státusz</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for i in project.invoices|sort(attribute='issue_date', reverse=True) %}
-                        <tr>
-                            <td>
-                                <a href="{{ url_for('invoices.detail', id=i.id) }}" class="fw-semibold">{{ i.invoice_number }}</a>
-                            </td>
-                            <td>
-                                {% if i.direction == 'outgoing' %}
-                                <span class="badge bg-blue-lt">Kimenő</span>
-                                {% else %}
-                                <span class="badge bg-purple-lt">Bejövő</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ "{:,.0f}".format(i.amount) }} Ft</td>
-                            <td class="text-muted">{{ "{:,.0f}".format(i.amount_with_vat or i.amount) }} Ft</td>
-                            <td class="text-muted small">{{ i.due_date or '—' }}</td>
-                            <td>
-                                <span class="badge {% if i.status == 'paid' %}bg-success{% elif i.status == 'overdue' %}bg-danger{% else %}bg-warning{% endif %}">
-                                    {% if i.status == 'paid' %}Fizetve
-                                    {% elif i.status == 'overdue' %}Lejárt
-                                    {% else %}Függőben{% endif %}
-                                </span>
-                            </td>
-                            <td class="d-flex gap-1">
-                                <a href="{{ url_for('invoices.pdf', id=i.id) }}" class="btn btn-xs btn-outline-secondary" title="PDF letöltés">
-                                    <i class="ti ti-file-type-pdf"></i>
-                                </a>
-                                {% if i.status != 'paid' %}
-                                <form method="POST" action="{{ url_for('invoices.mark_paid', id=i.id) }}" style="display:inline;">
-                                    <button class="btn btn-xs btn-success" onclick="return confirm('Kifizetettnek jelöl?')">✓</button>
-                                </form>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="7" class="text-center text-muted py-4">
-                                Nincs számla —
-                                <a href="#" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('quickInvoiceModal')).show(); return false;">Gyors rögzítés</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                        {% if project.invoices %}
-                        <tfoot class="table-light">
-                            <tr>
-                                <th colspan="2">Összesen (kimenő)</th>
-                                <th>{{ "{:,.0f}".format(project.total_invoiced) }} Ft</th>
-                                <th class="text-muted">{{ "{:,.0f}".format(invoiced_gross) }} Ft</th>
-                                <th colspan="3"></th>
-                            </tr>
-                        </tfoot>
-                        {% endif %}
-                    </table>
-                </div>
-            </div>
-
-            <!-- TAB: Payments -->
-            <div id="tab-payments" class="tab-content-panel" style="display:none;">
-                <div class="table-responsive">
-                    <table class="table table-hover table-vcenter mb-0">
-                        <thead>
-                            <tr>
-                                <th>Alvállalkozó</th>
-                                <th>Leírás</th>
-                                <th>Összeg</th>
-                                <th>Esedékes</th>
-                                <th>Státusz</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for p in project.subcontractor_payments|sort(attribute='issue_date', reverse=True) %}
-                        <tr>
-                            <td class="fw-semibold">{{ p.subcontractor.name }}</td>
-                            <td class="text-muted small">{{ p.description or '—' }}</td>
-                            <td>{{ "{:,.0f}".format(p.amount) }} Ft</td>
-                            <td class="text-muted small">{{ p.due_date or '—' }}</td>
-                            <td>
-                                <span class="badge {% if p.status == 'paid' %}bg-success{% else %}bg-warning{% endif %}">
-                                    {{ 'Fizetve' if p.status == 'paid' else 'Függő' }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if p.status != 'paid' %}
-                                <form method="POST" action="{{ url_for('subcontractors.mark_payment_paid', id=p.id) }}" style="display:inline;">
-                                    <button class="btn btn-xs btn-success" onclick="return confirm('Fizetve?')">✓</button>
-                                </form>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="6" class="text-center text-muted py-4">
-                                Nincs kifizetés —
-                                <a href="#" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('quickPaymentModal')).show(); return false;">Rögzítés</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        </tbody>
-                        {% if project.subcontractor_payments %}
-                        <tfoot class="table-light">
-                            <tr>
-                                <th colspan="2">Összesen</th>
-                                <th class="text-warning">{{ "{:,.0f}".format(project.total_subcontractor_cost) }} Ft</th>
-                                <th colspan="3"></th>
-                            </tr>
-                        </tfoot>
-                        {% endif %}
-                    </table>
-                </div>
-            </div>
-
-            <!-- TAB: Inventory -->
-            <div id="tab-inventory" class="tab-content-panel" style="display:none;">
-                <div class="p-2 border-bottom d-flex justify-content-end">
-                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
-                        <i class="ti ti-plus me-1"></i>Tétel hozzáadása
-                    </button>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-sm table-vcenter mb-0">
-                        <thead>
-                            <tr>
-                                <th>Termék</th>
-                                <th>Egység</th>
-                                <th class="text-end">Tervezett</th>
-                                <th class="text-end">Felhasznált</th>
-                                <th class="text-end">Eltérés</th>
-                                <th style="width:120px;"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for pi in project.inventory_items %}
-                        <tr>
-                            <td class="fw-semibold">{{ pi.item.name }}</td>
-                            <td class="text-muted">{{ pi.item.unit }}</td>
-                            <td class="text-end">{{ pi.quantity_planned }}</td>
-                            <td class="text-end">{{ pi.quantity_used }}</td>
-                            <td class="text-end {% if pi.variance > 0 %}text-danger fw-semibold{% elif pi.variance < 0 %}text-success{% else %}text-muted{% endif %}">
-                                {% if pi.variance > 0 %}
-                                    <i class="ti ti-arrow-up"></i>+{{ "%.1f"|format(pi.variance) }}
-                                    {% if pi.quantity_planned > 0 %}<small class="text-muted">({{ "%.0f"|format(pi.variance_pct) }}%)</small>{% endif %}
-                                {% elif pi.variance < 0 %}
-                                    <i class="ti ti-arrow-down"></i>{{ "%.1f"|format(pi.variance) }}
-                                    {% if pi.quantity_planned > 0 %}<small class="text-muted">({{ "%.0f"|format(pi.variance_pct) }}%)</small>{% endif %}
-                                {% else %}—{% endif %}
-                            </td>
-                            <td>
-                                <form method="POST" action="{{ url_for('inventory.update_usage', id=pi.id) }}" class="d-flex gap-1">
-                                    <input type="number" name="quantity_used" value="{{ pi.quantity_used }}"
-                                           step="0.01" min="0" class="form-control form-control-sm" style="width:75px;">
-                                    <button class="btn btn-sm btn-outline-primary px-2" title="Mentés">✓</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="6" class="text-center text-muted py-4">Nincs készlet rendelve</td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+        <div class="card mb-3">
+            <div class="card-header"><h3 class="card-title">Alvállalkozói kifizetések</h3></div>
+            <div class="table-responsive">
+                <table class="table table-hover table-vcenter mb-0">
+                    <thead><tr><th>Alvállalkozó</th><th>Leírás</th><th>Összeg</th><th>Státusz</th></tr></thead>
+                    <tbody>
+                    {% for p in project.subcontractor_payments|sort(attribute='issue_date', reverse=True) %}
+                    <tr>
+                        <td class="fw-semibold">{{ p.subcontractor.name }}</td>
+                        <td class="text-muted">{{ p.description or '-' }}</td>
+                        <td>{{ "{:,.0f}".format(p.amount or 0) if (p.currency or project.currency or 'HUF') == 'HUF' else "{:,.2f}".format(p.amount or 0) }} {{ p.currency or project.currency or 'HUF' }}</td>
+                        <td><span class="badge {% if p.status == 'paid' %}bg-success{% elif p.status == 'overdue' %}bg-danger{% else %}bg-warning{% endif %}">{% if p.status == 'paid' %}Fizetve{% elif p.status == 'overdue' %}Lejárt{% else %}Függőben{% endif %}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center text-muted py-4">Nincs alvállalkozói kifizetés.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ── MODALS ──────────────────────────────────────────────── -->
-
-<!-- Quick Invoice Modal -->
-<div class="modal fade" id="quickInvoiceModal" tabindex="-1">
+<div class="modal fade" id="quickInvoiceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('projects.quick_invoice', id=project.id) }}">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="ti ti-file-plus me-2"></i>Gyors számla rögzítése</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+            <form method="POST" action="{{ url_for('projects.quick_invoice', id=project.id) }}" id="quickInvoiceForm">
+                <div class="modal-header"><h5 class="modal-title">Gyors számla</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <div class="alert alert-info py-2 px-3 mb-3 small">
-                        <i class="ti ti-building me-1"></i><strong>{{ project.client.name }}</strong>
-                        &nbsp;·&nbsp;<i class="ti ti-folder me-1"></i><strong>{{ project.name }}</strong>
-                        &nbsp;·&nbsp; Számlaszám automatikusan generálva
-                    </div>
-                    <div class="row g-2">
+                    <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Irány</label>
-                            <select name="direction" class="form-select" id="qi-direction">
-                                <option value="outgoing" selected>Kimenő (ügyfélnek)</option>
-                                <option value="incoming">Bejövő (alvállalkozótól)</option>
+                            <label class="form-label">Pénznem</label>
+                            <select name="currency" class="form-select">
+                                <option value="HUF" {% if (project.currency or 'HUF') == 'HUF' %}selected{% endif %}>HUF</option>
+                                <option value="EUR" {% if project.currency == 'EUR' %}selected{% endif %}>EUR</option>
+                                <option value="USD" {% if project.currency == 'USD' %}selected{% endif %}>USD</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">ÁFA kulcs</label>
-                            <select name="vat_rate" class="form-select" id="qi-vat">
-                                <option value="27" selected>27%</option>
+                            <label class="form-label">ÁFA</label>
+                            <select name="vat_rate" class="form-select" id="qiVat">
+                                <option value="0">0%</option>
                                 <option value="5">5%</option>
-                                <option value="0">0% (ÁFA mentes)</option>
+                                <option value="18">18%</option>
+                                <option value="27" selected>27%</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Nettó összeg (Ft) <span class="text-danger">*</span></label>
-                            <input type="number" name="amount" class="form-control" id="qi-amount"
-                                   step="1" min="0" required placeholder="pl. 500000">
+                            <label class="form-label">Nettó összeg</label>
+                            <input type="number" name="amount" id="qiAmount" class="form-control" min="0" step="0.01" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Bruttó (számolt)</label>
-                            <input type="text" class="form-control" id="qi-gross" readonly
-                                   style="background:#f8f9fa;" placeholder="—">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Kiállítás dátuma <span class="text-danger">*</span></label>
-                            <input type="date" name="issue_date" class="form-control" value="{{ today }}" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Esedékesség</label>
-                            <input type="date" name="due_date" class="form-control">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Leírás</label>
-                            <input type="text" name="description" class="form-control"
-                                   placeholder="Rövid leírás (opcionális)">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégse</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="ti ti-check me-1"></i>Számla rögzítése
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Quick Payment Modal -->
-<div class="modal fade" id="quickPaymentModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('projects.quick_payment', id=project.id) }}">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="ti ti-cash me-2"></i>Alvállalkozói kifizetés rögzítése</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-2">
-                        <div class="col-12">
-                            <label class="form-label">Alvállalkozó <span class="text-danger">*</span></label>
-                            <select name="subcontractor_id" class="form-select" required>
-                                <option value="">Válassz...</option>
-                                {% for s in subcontractors %}
-                                <option value="{{ s.id }}">{{ s.name }}{% if s.specialty %} — {{ s.specialty }}{% endif %}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Összeg (Ft) <span class="text-danger">*</span></label>
-                            <input type="number" name="amount" class="form-control" step="1" min="0"
-                                   required placeholder="pl. 200000">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Számla referencia</label>
-                            <input type="text" name="invoice_ref" class="form-control" placeholder="Opcionális">
+                            <label class="form-label">Bruttó összeg</label>
+                            <input type="text" id="qiGross" class="form-control" readonly>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kiállítás dátuma</label>
@@ -510,82 +147,117 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label">Leírás</label>
-                            <input type="text" name="description" class="form-control"
-                                   placeholder="Munka megnevezése...">
+                            <input type="text" name="description" class="form-control remember-field" data-remember-key="erp_quick_invoice_description_history" list="erpQuickInvoiceDescriptionHistory">
+                            <datalist id="erpQuickInvoiceDescriptionHistory"></datalist>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégse</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="ti ti-check me-1"></i>Kifizetés rögzítése
-                    </button>
-                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Mégse</button><button type="submit" class="btn btn-primary">Mentés</button></div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Add Inventory Modal -->
-<div class="modal fade" id="addInventoryModal" tabindex="-1">
+<div class="modal fade" id="quickPaymentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('inventory.add_to_project', project_id=project.id) }}">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="ti ti-package me-2"></i>Készlet hozzáadása</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+            <form method="POST" action="{{ url_for('projects.quick_payment', id=project.id) }}" id="quickPaymentForm">
+                <div class="modal-header"><h5 class="modal-title">Gyors kifizetés</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Termék <span class="text-danger">*</span></label>
-                        <select name="item_id" class="form-select" required>
-                            <option value="">Válassz...</option>
-                            {% for item in inventory_items %}
-                            <option value="{{ item.id }}">
-                                {{ item.name }}{% if item.sku %} ({{ item.sku }}){% endif %}
-                                — szabad: {{ item.remaining }} {{ item.unit }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Tervezett mennyiség <span class="text-danger">*</span></label>
-                        <input type="number" name="quantity_planned" step="0.01" min="0" class="form-control" required>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Alvállalkozó</label>
+                            <select name="subcontractor_id" class="form-select" required>
+                                <option value="">Válasszon alvállalkozót...</option>
+                                {% for sub in subcontractors %}
+                                <option value="{{ sub.id }}">{{ sub.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Összeg</label>
+                            <input type="number" name="amount" class="form-control" min="0" step="0.01" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Pénznem</label>
+                            <select name="currency" class="form-select">
+                                <option value="HUF" {% if (project.currency or 'HUF') == 'HUF' %}selected{% endif %}>HUF</option>
+                                <option value="EUR" {% if project.currency == 'EUR' %}selected{% endif %}>EUR</option>
+                                <option value="USD" {% if project.currency == 'USD' %}selected{% endif %}>USD</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Leírás</label>
+                            <input type="text" name="description" class="form-control remember-field" data-remember-key="erp_quick_payment_description_history" list="erpQuickPaymentDescriptionHistory">
+                            <datalist id="erpQuickPaymentDescriptionHistory"></datalist>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Számla hivatkozás</label>
+                            <input type="text" name="invoice_ref" class="form-control remember-field" data-remember-key="erp_quick_payment_invoice_ref_history" list="erpQuickPaymentInvoiceRefHistory">
+                            <datalist id="erpQuickPaymentInvoiceRefHistory"></datalist>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Mégse</button>
-                    <button type="submit" class="btn btn-primary">Hozzáadás</button>
-                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Mégse</button><button type="submit" class="btn btn-warning">Mentés</button></div>
             </form>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Tab switcher
-function switchTab(name, el) {
-    document.querySelectorAll('.tab-content-panel').forEach(function(p) { p.style.display = 'none'; });
-    document.querySelectorAll('#projectTabs .nav-link').forEach(function(a) { a.classList.remove('active'); });
-    document.getElementById('tab-' + name).style.display = 'block';
-    el.classList.add('active');
-}
-
-// Bruttó calculator in quick invoice modal
 (function () {
-    var amt  = document.getElementById('qi-amount');
-    var vat  = document.getElementById('qi-vat');
-    var gross = document.getElementById('qi-gross');
+    const amt = document.getElementById('qiAmount');
+    const vat = document.getElementById('qiVat');
+    const gross = document.getElementById('qiGross');
+    const rememberFields = Array.from(document.querySelectorAll('.remember-field'));
+
     function calc() {
-        var a = parseFloat(amt.value) || 0;
-        var v = parseFloat(vat.value) || 0;
-        gross.value = a > 0 ? Math.round(a * (1 + v / 100)).toLocaleString('hu-HU') + ' Ft' : '';
+        const a = parseFloat(amt.value) || 0;
+        const v = parseFloat(vat.value) || 0;
+        gross.value = a > 0 ? Math.round(a * (1 + v / 100)).toLocaleString('hu-HU') : '';
     }
-    if (amt) { amt.addEventListener('input', calc); }
-    if (vat) { vat.addEventListener('change', calc); }
+
+    function getList(field) {
+        const listId = field.getAttribute('list');
+        return listId ? document.getElementById(listId) : null;
+    }
+
+    function hydrate(field) {
+        const key = field.dataset.rememberKey;
+        const list = getList(field);
+        if (!key || !list) return;
+        let values = [];
+        try {
+            values = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (error) {
+            values = [];
+        }
+        list.innerHTML = values.map((value) => `<option value="${String(value).replace(/"/g, '&quot;')}"></option>`).join('');
+    }
+
+    function save(field) {
+        const key = field.dataset.rememberKey;
+        const value = (field.value || '').trim();
+        if (!key || !value) return;
+        let values = [];
+        try {
+            values = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (error) {
+            values = [];
+        }
+        values = [value, ...values.filter((item) => item !== value)].slice(0, 12);
+        localStorage.setItem(key, JSON.stringify(values));
+    }
+
+    if (amt) amt.addEventListener('input', calc);
+    if (vat) vat.addEventListener('change', calc);
+    rememberFields.forEach(hydrate);
+    ['quickInvoiceForm', 'quickPaymentForm'].forEach((id) => {
+        const form = document.getElementById(id);
+        if (form) form.addEventListener('submit', () => rememberFields.forEach(save));
+    });
 })();
 </script>
 {% endblock %}

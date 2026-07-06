@@ -109,6 +109,16 @@ def create_app():
                         conn.execute(text(f'ALTER TABLE invoices ADD COLUMN pdf_data {blob_type}'))
                     if 'pdf_filename' not in existing:
                         conn.execute(text('ALTER TABLE invoices ADD COLUMN pdf_filename VARCHAR(255)'))
+                    if 'currency' not in existing:
+                        conn.execute(text("ALTER TABLE invoices ADD COLUMN currency VARCHAR(3) DEFAULT 'HUF'"))
+                    if inspector.has_table('projects'):
+                        project_columns = {c['name'] for c in inspector.get_columns('projects')}
+                        if 'currency' not in project_columns:
+                            conn.execute(text("ALTER TABLE projects ADD COLUMN currency VARCHAR(3) DEFAULT 'HUF'"))
+                    if inspector.has_table('subcontractor_payments'):
+                        payment_columns = {c['name'] for c in inspector.get_columns('subcontractor_payments')}
+                        if 'currency' not in payment_columns:
+                            conn.execute(text("ALTER TABLE subcontractor_payments ADD COLUMN currency VARCHAR(3) DEFAULT 'HUF'"))
                     conn.commit()
         except Exception:
             pass  # fresh install: create_all handles it

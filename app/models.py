@@ -70,6 +70,7 @@ class Project(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     notes = db.Column(db.Text)
+    currency = db.Column(db.String(3), default='HUF')
 
     invoices = db.relationship('Invoice', backref='project', lazy=True)
     subcontractor_payments = db.relationship('SubcontractorPayment', backref='project', lazy=True)
@@ -81,11 +82,19 @@ class Project(db.Model):
 
     @property
     def total_invoiced(self):
-        return sum(float(i.amount or 0) for i in self.invoices if i.direction == 'outgoing')
+        return sum(
+            float(i.amount_with_vat or i.amount or 0)
+            for i in self.invoices
+            if i.direction == 'outgoing' and i.status != 'cancelled'
+        )
 
     @property
     def total_received(self):
-        return sum(float(i.amount or 0) for i in self.invoices if i.direction == 'outgoing' and i.status == 'paid')
+        return sum(
+            float(i.amount_with_vat or i.amount or 0)
+            for i in self.invoices
+            if i.direction == 'outgoing' and i.status == 'paid'
+        )
 
     @property
     def total_subcontractor_cost(self):
@@ -120,6 +129,7 @@ class Invoice(db.Model):
     paid_date = db.Column(db.Date)
     status = db.Column(db.String(20), default='pending')  # pending, paid, overdue, cancelled
     notes = db.Column(db.Text)
+    currency = db.Column(db.String(3), default='HUF')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     notification_sent = db.Column(db.Boolean, default=False)
@@ -140,6 +150,7 @@ class SubcontractorPayment(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending, paid, overdue
     invoice_ref = db.Column(db.String(100))
     notes = db.Column(db.Text)
+    currency = db.Column(db.String(3), default='HUF')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     notification_sent = db.Column(db.Boolean, default=False)
 

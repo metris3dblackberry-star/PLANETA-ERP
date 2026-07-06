@@ -8,7 +8,7 @@
             <div class="card-header">
                 <h3 class="card-title">
                     <i class="ti ti-file-invoice me-2"></i>
-                    {{ 'Számla szerkesztése — ' ~ invoice.invoice_number if invoice else 'Új számla rögzítése' }}
+                    {{ 'Számla szerkesztése - ' ~ invoice.invoice_number if invoice else 'Új számla rögzítése' }}
                 </h3>
             </div>
             <div class="card-body">
@@ -16,9 +16,7 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Számlaszám</label>
-                            <input type="text" name="invoice_number" class="form-control"
-                                   value="{{ next_number }}"
-                                   {% if invoice %}readonly{% endif %}>
+                            <input type="text" name="invoice_number" class="form-control" value="{{ next_number }}" {% if invoice %}readonly{% endif %}>
                             {% if not invoice %}
                             <div class="form-text">Automatikusan generált, felülírható.</div>
                             {% endif %}
@@ -26,18 +24,14 @@
                         <div class="col-md-6">
                             <label class="form-label">Irány <span class="text-danger">*</span></label>
                             <select name="direction" class="form-select" required>
-                                <option value="outgoing" {% if not invoice or invoice.direction == 'outgoing' %}selected{% endif %}>
-                                    Kimenő (ügyfelünknek számlázunk)
-                                </option>
-                                <option value="incoming" {% if invoice and invoice.direction == 'incoming' %}selected{% endif %}>
-                                    Bejövő (alvállalkozótól kapott)
-                                </option>
+                                <option value="outgoing" {% if not invoice or invoice.direction == 'outgoing' %}selected{% endif %}>Kimenő (ügyfelünknek számlázunk)</option>
+                                <option value="incoming" {% if invoice and invoice.direction == 'incoming' %}selected{% endif %}>Bejövő (alvállalkozótól kapott)</option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Projekt <span class="text-danger">*</span></label>
                             <select name="project_id" class="form-select" required>
-                                <option value="">— Nincs projekt —</option>
+                                <option value="">- Nincs projekt -</option>
                                 {% for p in projects %}
                                 <option value="{{ p.id }}"
                                     {% if invoice and invoice.project_id == p.id %}selected
@@ -51,44 +45,44 @@
                         <div class="col-md-6">
                             <label class="form-label">Ügyfél</label>
                             <select name="client_id" class="form-select" required>
-                                <option value="">— Nincs ügyfél —</option>
+                                <option value="">- Nincs ügyfél -</option>
                                 {% for c in clients %}
-                                <option value="{{ c.id }}"
-                                    {% if invoice and invoice.client_id == c.id %}selected{% endif %}>
-                                    {{ c.name }}
-                                </option>
+                                <option value="{{ c.id }}" {% if invoice and invoice.client_id == c.id %}selected{% endif %}>{{ c.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Pénznem</label>
+                            <select name="currency" id="invoiceCurrency" class="form-select">
+                                <option value="HUF" {% if not invoice or (invoice.currency or 'HUF') == 'HUF' %}selected{% endif %}>HUF</option>
+                                <option value="EUR" {% if invoice and invoice.currency == 'EUR' %}selected{% endif %}>EUR</option>
+                                <option value="USD" {% if invoice and invoice.currency == 'USD' %}selected{% endif %}>USD</option>
+                            </select>
+                        </div>
                         <div class="col-md-5">
-                            <label class="form-label">Nettó összeg (Ft) <span class="text-danger">*</span></label>
-                            <input type="number" name="amount" id="amount" class="form-control"
-                                   value="{{ invoice.amount if invoice else '' }}"
-                                   min="0" step="1" required oninput="calcGross()">
+                            <label class="form-label">Nettó összeg <span class="text-danger">*</span></label>
+                            <input type="number" name="amount" id="amount" class="form-control" value="{{ invoice.amount if invoice else '' }}" min="0" step="0.01" required>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">ÁFA (%)</label>
-                            <select name="vat_rate" id="vat_rate" class="form-select" onchange="calcGross()">
+                            <select name="vat_rate" id="vat_rate" class="form-select">
                                 <option value="0" {% if invoice and invoice.vat_rate == 0 %}selected{% endif %}>0%</option>
                                 <option value="5" {% if invoice and invoice.vat_rate == 5 %}selected{% endif %}>5%</option>
+                                <option value="18" {% if invoice and invoice.vat_rate == 18 %}selected{% endif %}>18%</option>
                                 <option value="27" {% if not invoice or invoice.vat_rate == 27 %}selected{% endif %}>27%</option>
                             </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Bruttó összeg</label>
-                            <input type="text" id="gross_display" class="form-control" readonly
-                                   style="background:#f8f9fa;"
-                                   value="{{ '{:,.0f}'.format(invoice.amount_with_vat) ~ ' Ft' if invoice else '' }}">
+                            <input type="text" id="grossDisplay" class="form-control" readonly style="background:#f8f9fa;">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kiállítás dátuma</label>
-                            <input type="date" name="issue_date" class="form-control"
-                                   value="{{ invoice.issue_date|string if invoice and invoice.issue_date else '' }}">
+                            <input type="date" name="issue_date" class="form-control" value="{{ invoice.issue_date|string if invoice and invoice.issue_date else '' }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Fizetési határidő</label>
-                            <input type="date" name="due_date" class="form-control"
-                                   value="{{ invoice.due_date|string if invoice and invoice.due_date else '' }}">
+                            <input type="date" name="due_date" class="form-control" value="{{ invoice.due_date|string if invoice and invoice.due_date else '' }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Státusz</label>
@@ -100,17 +94,15 @@
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Leírás / Tárgy</label>
-                            <input type="text" name="description" class="form-control"
-                                   value="{{ invoice.description if invoice else '' }}"
-                                   placeholder="pl. Kivitelezési munkák — 1. részlet">
+                            <label class="form-label">Leírás / tárgy</label>
+                            <input type="text" name="description" id="invoiceDescription" class="form-control remember-field" data-remember-key="erp_invoice_description_history" list="erpInvoiceDescriptionHistory" value="{{ invoice.description if invoice else '' }}" placeholder="pl. Kivitelezési munkák - 1. részlet">
+                            <datalist id="erpInvoiceDescriptionHistory"></datalist>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Megjegyzés</label>
-                            <textarea name="notes" class="form-control" rows="2">{{ invoice.notes if invoice else '' }}</textarea>
+                            <textarea name="notes" id="invoiceNotes" class="form-control remember-field" rows="2" data-remember-key="erp_invoice_notes_history" data-history="erpInvoiceNotesHistory">{{ invoice.notes if invoice else '' }}</textarea>
+                            <datalist id="erpInvoiceNotesHistory"></datalist>
                         </div>
-
-                        <!-- PDF feltöltés -->
                         <div class="col-12">
                             <hr class="my-1">
                             <label class="form-label fw-semibold">
@@ -121,16 +113,14 @@
                                 <i class="ti ti-file-type-pdf fs-3 text-success"></i>
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold small">{{ invoice.pdf_filename }}</div>
-                                    <div class="text-muted small">Jelenleg feltöltött PDF — új fájl választásával felülírható</div>
+                                    <div class="text-muted small">Jelenleg feltöltött PDF - új fájl választásával felülírható</div>
                                 </div>
-                                <a href="{{ url_for('invoices.download_uploaded_pdf', id=invoice.id) }}"
-                                   class="btn btn-sm btn-outline-success" target="_blank">
+                                <a href="{{ url_for('invoices.download_uploaded_pdf', id=invoice.id) }}" class="btn btn-sm btn-outline-success" target="_blank">
                                     <i class="ti ti-download me-1"></i>Letöltés
                                 </a>
                             </div>
                             {% endif %}
-                            <input type="file" name="pdf_file" class="form-control" accept=".pdf"
-                                   {% if not invoice or not invoice.pdf_filename %}{% else %}{% endif %}>
+                            <input type="file" name="pdf_file" class="form-control" accept=".pdf">
                             <div class="form-text">
                                 Csak PDF fájl, max. 10 MB.
                                 {% if invoice and invoice.pdf_filename %}Új fájl feltöltése felülírja a jelenlegit.{% endif %}
@@ -142,16 +132,15 @@
                             <i class="ti ti-device-floppy me-1"></i>Mentés
                         </button>
                         <a href="{{ url_for('invoices.list') }}" class="btn btn-outline-secondary">Mégse</a>
-                        {% if invoice %}
-                        <form method="POST" action="{{ url_for('invoices.delete', id=invoice.id) }}"
-                              class="ms-auto" onsubmit="return confirm('Biztosan törli a számlát?')">
-                            <button type="submit" class="btn btn-outline-danger">
-                                <i class="ti ti-trash me-1"></i>Törlés
-                            </button>
-                        </form>
-                        {% endif %}
                     </div>
                 </form>
+                {% if invoice %}
+                <form method="POST" action="{{ url_for('invoices.delete', id=invoice.id) }}" class="mt-3" onsubmit="return confirm('Biztosan törli a számlát?')">
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="ti ti-trash me-1"></i>Törlés
+                    </button>
+                </form>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -159,12 +148,63 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-function calcGross() {
-    const amount = parseFloat(document.getElementById('amount').value) || 0;
-    const vat = parseFloat(document.getElementById('vat_rate').value) || 0;
-    const gross = amount * (1 + vat / 100);
-    document.getElementById('gross_display').value = gross.toLocaleString('hu-HU', {maximumFractionDigits: 0}) + ' Ft';
-}
-calcGross();
+(function () {
+    const form = document.getElementById('invoiceForm');
+    const amountInput = document.getElementById('amount');
+    const vatInput = document.getElementById('vat_rate');
+    const currencyInput = document.getElementById('invoiceCurrency');
+    const grossDisplay = document.getElementById('grossDisplay');
+    const rememberFields = Array.from(document.querySelectorAll('.remember-field'));
+
+    function calcGross() {
+        const amount = parseFloat(amountInput.value) || 0;
+        const vat = parseFloat(vatInput.value) || 0;
+        const currency = currencyInput.value || 'HUF';
+        const gross = amount * (1 + vat / 100);
+        const digits = currency === 'HUF' ? 0 : 2;
+        grossDisplay.value = gross.toLocaleString('hu-HU', { maximumFractionDigits: digits }) + ' ' + currency;
+    }
+
+    function getHistoryList(field) {
+        const dataHistory = field.dataset.history;
+        if (dataHistory) return document.getElementById(dataHistory);
+        const listId = field.getAttribute('list');
+        return listId ? document.getElementById(listId) : null;
+    }
+
+    function hydrateHistory(field) {
+        const key = field.dataset.rememberKey;
+        const list = getHistoryList(field);
+        if (!key || !list) return;
+        let values = [];
+        try {
+            values = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (error) {
+            values = [];
+        }
+        list.innerHTML = values.map((value) => `<option value="${String(value).replace(/"/g, '&quot;')}"></option>`).join('');
+    }
+
+    function saveHistory(field) {
+        const key = field.dataset.rememberKey;
+        const value = (field.value || '').trim();
+        if (!key || !value) return;
+        let values = [];
+        try {
+            values = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (error) {
+            values = [];
+        }
+        values = [value, ...values.filter((item) => item !== value)].slice(0, 12);
+        localStorage.setItem(key, JSON.stringify(values));
+    }
+
+    rememberFields.forEach(hydrateHistory);
+    [amountInput, vatInput, currencyInput].forEach((field) => field && field.addEventListener('input', calcGross));
+    if (vatInput) vatInput.addEventListener('change', calcGross);
+    if (currencyInput) currencyInput.addEventListener('change', calcGross);
+    if (form) form.addEventListener('submit', () => rememberFields.forEach(saveHistory));
+    calcGross();
+})();
 </script>
 {% endblock %}

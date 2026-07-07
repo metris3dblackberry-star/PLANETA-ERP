@@ -8,8 +8,19 @@ clients_bp = Blueprint('clients', __name__, url_prefix='/clients')
 @clients_bp.route('/')
 @login_required
 def list():
-    clients = Client.query.filter_by(is_active=True).order_by(Client.name).all()
-    return render_template('clients/list.html', clients=clients)
+    q = (request.args.get('q') or '').strip()
+    query = Client.query.filter_by(is_active=True)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            Client.name.ilike(like)
+            | Client.email.ilike(like)
+            | Client.phone.ilike(like)
+            | Client.contact_person.ilike(like)
+            | Client.tax_number.ilike(like)
+        )
+    clients = query.order_by(Client.name).all()
+    return render_template('clients/list.html', clients=clients, q=q)
 
 @clients_bp.route('/new', methods=['GET', 'POST'])
 @login_required

@@ -11,7 +11,7 @@
         </div>
         <div class="btn-group">
             <a href="?direction={{ direction }}&status=all" class="btn btn-sm {% if status == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Összes státusz</a>
-            <a href="?direction={{ direction }}&status=pending" class="btn btn-sm {% if status == 'pending' %}btn-warning{% else %}btn-outline-secondary{% endif %}">Függő</a>
+            <a href="?direction={{ direction }}&status=pending" class="btn btn-sm {% if status == 'pending' %}btn-warning{% else %}btn-outline-secondary{% endif %}">Függőben</a>
             <a href="?direction={{ direction }}&status=paid" class="btn btn-sm {% if status == 'paid' %}btn-success{% else %}btn-outline-secondary{% endif %}">Fizetve</a>
             <a href="?direction={{ direction }}&status=overdue" class="btn btn-sm {% if status == 'overdue' %}btn-danger{% else %}btn-outline-secondary{% endif %}">Lejárt</a>
         </div>
@@ -29,6 +29,7 @@
                     <th>Projekt</th>
                     <th>Ügyfél</th>
                     <th>Irány</th>
+                    <th>Adónem</th>
                     <th>Nettó összeg</th>
                     <th>Bruttó összeg</th>
                     <th>Esedékes</th>
@@ -39,19 +40,13 @@
             <tbody>
             {% for i in invoices %}
             <tr>
-                <td>
-                    <a href="{{ url_for('invoices.detail', id=i.id) }}" class="fw-semibold">
-                        {{ i.invoice_number }}
-                    </a>
-                </td>
+                <td><a href="{{ url_for('invoices.detail', id=i.id) }}" class="fw-semibold">{{ i.invoice_number }}</a></td>
                 <td>
                     {% if i.project %}
-                    <a href="{{ url_for('projects.detail', id=i.project.id) }}" class="text-muted">
-                        {{ i.project.name }}
-                    </a>
-                    {% else %}—{% endif %}
+                    <a href="{{ url_for('projects.detail', id=i.project.id) }}" class="text-muted">{{ i.project.name }}</a>
+                    {% else %}-{% endif %}
                 </td>
-                <td>{{ i.client.name if i.client else '—' }}</td>
+                <td>{{ i.client.name if i.client else '-' }}</td>
                 <td>
                     {% if i.direction == 'outgoing' %}
                     <span class="badge bg-blue-lt">Kimenő</span>
@@ -59,10 +54,21 @@
                     <span class="badge bg-purple-lt">Bejövő</span>
                     {% endif %}
                 </td>
-                <td class="fw-semibold">{{ "{:,.0f}".format(i.amount) }} Ft</td>
-                <td class="text-muted">{{ "{:,.0f}".format(i.amount_with_vat or i.amount) }} Ft</td>
+                <td class="text-muted">
+                    {% if (i.tax_category or 'VAT') == 'VAT' %}
+                    ÁFA {{ i.vat_rate|int }}%
+                    {% else %}
+                    {{ i.tax_category }}
+                    {% endif %}
+                </td>
+                <td class="fw-semibold">
+                    {{ "{:,.0f}".format(i.amount) if (i.currency or 'HUF') == 'HUF' else "{:,.2f}".format(i.amount) }} {{ i.currency or 'HUF' }}
+                </td>
+                <td class="text-muted">
+                    {{ "{:,.0f}".format(i.amount_with_vat or i.amount) if (i.currency or 'HUF') == 'HUF' else "{:,.2f}".format(i.amount_with_vat or i.amount) }} {{ i.currency or 'HUF' }}
+                </td>
                 <td class="{% if i.status == 'overdue' %}text-danger fw-semibold{% else %}text-muted{% endif %}">
-                    {{ i.due_date or '—' }}
+                    {{ i.due_date or '-' }}
                 </td>
                 <td>
                     <span class="badge {% if i.status == 'paid' %}bg-success{% elif i.status == 'overdue' %}bg-danger{% elif i.status == 'cancelled' %}bg-secondary{% else %}bg-warning{% endif %}">
@@ -73,16 +79,11 @@
                     </span>
                 </td>
                 <td class="d-flex gap-1">
-                    <a href="{{ url_for('invoices.detail', id=i.id) }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="ti ti-eye"></i>
-                    </a>
-                    <a href="{{ url_for('invoices.edit', id=i.id) }}" class="btn btn-sm btn-outline-primary">
-                        <i class="ti ti-edit"></i>
-                    </a>
+                    <a href="{{ url_for('invoices.detail', id=i.id) }}" class="btn btn-sm btn-outline-secondary"><i class="ti ti-eye"></i></a>
+                    <a href="{{ url_for('invoices.edit', id=i.id) }}" class="btn btn-sm btn-outline-primary"><i class="ti ti-edit"></i></a>
                     {% if i.status != 'paid' %}
                     <form method="POST" action="{{ url_for('invoices.mark_paid', id=i.id) }}" style="display:inline;">
-                        <button class="btn btn-sm btn-success" onclick="return confirm('Kifizetettnek jelöl?')"
-                                title="Fizetve jelölés">
+                        <button class="btn btn-sm btn-success" onclick="return confirm('Kifizetettnek jelöl?')" title="Fizetve jelölés">
                             <i class="ti ti-check"></i>
                         </button>
                     </form>
@@ -90,7 +91,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="9" class="text-center text-muted py-4">Nincs számla</td></tr>
+            <tr><td colspan="10" class="text-center text-muted py-4">Nincs számla</td></tr>
             {% endfor %}
             </tbody>
         </table>

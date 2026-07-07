@@ -1,0 +1,114 @@
+{% extends 'base/layout.html' %}
+{% block title %}Kifizetések{% endblock %}
+{% block page_title %}Alvállalkozói kifizetések{% endblock %}
+{% block content %}
+
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-4">
+        <div class="card" style="border-left:4px solid #1a3a5c;">
+            <div class="card-body py-2 px-3">
+                <div class="text-muted small">Összes kifizetés</div>
+                <div class="h5 mb-0">{{ "{:,.0f}".format(total) }} Ft</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-4">
+        <div class="card" style="border-left:4px solid #2fb344;">
+            <div class="card-body py-2 px-3">
+                <div class="text-muted small">Teljesítve</div>
+                <div class="h5 mb-0 text-success">{{ "{:,.0f}".format(paid) }} Ft</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-4">
+        <div class="card" style="border-left:4px solid #f59f00;">
+            <div class="card-body py-2 px-3">
+                <div class="text-muted small">Függőben</div>
+                <div class="h5 mb-0 text-warning">{{ "{:,.0f}".format(pending) }} Ft</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter + action bar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="btn-group">
+        <a href="?status=all"     class="btn btn-sm {% if status == 'all'     %}btn-primary{% else %}btn-outline-secondary{% endif %}">Összes</a>
+        <a href="?status=pending" class="btn btn-sm {% if status == 'pending' %}btn-warning{% else %}btn-outline-secondary{% endif %}">Függő</a>
+        <a href="?status=paid"    class="btn btn-sm {% if status == 'paid'    %}btn-success{% else %}btn-outline-secondary{% endif %}">Teljesítve</a>
+    </div>
+    <a href="{{ url_for('subcontractors.new_payment') }}" class="btn btn-primary">
+        <i class="ti ti-plus me-1"></i>Új kifizetés
+    </a>
+</div>
+
+<!-- Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-vcenter mb-0">
+            <thead>
+                <tr>
+                    <th>Alvállalkozó</th>
+                    <th>Projekt</th>
+                    <th>Leírás</th>
+                    <th>Összeg</th>
+                    <th>Kiállítva</th>
+                    <th>Esedékes</th>
+                    <th>Státusz</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in payments %}
+            <tr>
+                <td class="fw-semibold">{{ p.subcontractor.name }}</td>
+                <td>
+                    <a href="{{ url_for('projects.detail', id=p.project.id) }}" class="text-muted small">
+                        {{ p.project.name }}
+                    </a>
+                </td>
+                <td class="text-muted small">{{ p.description or '—' }}</td>
+                <td class="fw-semibold">{{ "{:,.0f}".format(p.amount) }} Ft</td>
+                <td class="text-muted small">{{ p.issue_date or '—' }}</td>
+                <td class="text-muted small {% if p.status != 'paid' and p.due_date and p.due_date < today %}text-danger fw-semibold{% endif %}">
+                    {{ p.due_date or '—' }}
+                </td>
+                <td>
+                    <span class="badge {% if p.status == 'paid' %}bg-success{% else %}bg-warning{% endif %}">
+                        {{ 'Teljesítve' if p.status == 'paid' else 'Függőben' }}
+                    </span>
+                </td>
+                <td>
+                    {% if p.status != 'paid' %}
+                    <form method="POST" action="{{ url_for('subcontractors.mark_payment_paid', id=p.id) }}"
+                          style="display:inline;" onsubmit="return confirm('Teljesítettnek jelöl?')">
+                        <button class="btn btn-xs btn-success" title="Fizetve jelölés">
+                            <i class="ti ti-check"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center text-muted py-4">
+                    Nincs kifizetés —
+                    <a href="{{ url_for('subcontractors.new_payment') }}">Rögzítés</a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+            {% if payments %}
+            <tfoot class="table-light">
+                <tr>
+                    <th colspan="3">Összesen ({{ payments|length }} tétel)</th>
+                    <th>{{ "{:,.0f}".format(total) }} Ft</th>
+                    <th colspan="4"></th>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+</div>
+{% endblock %}

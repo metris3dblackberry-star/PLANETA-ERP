@@ -1,8 +1,18 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
-from flask_login import login_required, current_user
-from app.models import Project, Client, Invoice, SubcontractorPayment, ProjectInventory, Subcontractor
+from datetime import date as date_type, datetime
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
 from app import db
-from datetime import datetime
+from app.models import (
+    Client,
+    InventoryItem,
+    Invoice,
+    Project,
+    ProjectInventory,
+    Subcontractor,
+    SubcontractorPayment,
+)
 
 projects_bp = Blueprint('projects', __name__, url_prefix='/projects')
 
@@ -11,10 +21,10 @@ projects_bp = Blueprint('projects', __name__, url_prefix='/projects')
 @login_required
 def list():
     status = request.args.get('status', 'all')
-    q = Project.query
+    query = Project.query
     if status != 'all':
-        q = q.filter_by(status=status)
-    projects = q.order_by(Project.created_at.desc()).all()
+        query = query.filter_by(status=status)
+    projects = query.order_by(Project.created_at.desc()).all()
     return render_template('projects/list.html', projects=projects, status=status)
 
 
@@ -29,8 +39,9 @@ def new():
             client_id=request.form.get('client_id'),
             status=request.form.get('status', 'active'),
             contract_value=request.form.get('contract_value') or 0,
+            currency=request.form.get('currency', 'HUF'),
             notes=request.form.get('notes'),
-            created_by=current_user.id
+            created_by=current_user.id,
         )
         start = request.form.get('start_date')
         end = request.form.get('end_date')
@@ -38,10 +49,12 @@ def new():
             project.start_date = datetime.strptime(start, '%Y-%m-%d').date()
         if end:
             project.end_date = datetime.strptime(end, '%Y-%m-%d').date()
+
         db.session.add(project)
         db.session.commit()
         flash(f'"{project.name}" projekt létrehozva!', 'success')
         return redirect(url_for('projects.detail', id=project.id))
+
     return render_template('projects/form.html', clients=clients, project=None)
 
 
@@ -50,7 +63,90 @@ def new():
 def detail(id):
     project = Project.query.get_or_404(id)
     subcontractors = Subcontractor.query.filter_by(is_active=True).all()
-    return render_template('projects/detail.html', project=project, subcontractors=subcontractors)
+    inventory_items = InventoryItem.query.order_by(InventoryItem.name).all()
+    invoices = Invoice.query.filter_by(project_id=project.id).order_by(
+        Invoice.issue_date.desc(), Invoice.created_at.desc()
+    ).all()
+    today = date_type.today().isoformat()
+    invoiced_gross = sum(
+        float(i.amount_with_vat or i.amount or 0)
+        for i in invoices
+        if i.direction == 'outgoing' and i.status != 'cancelled'
+    )
+    return render_template(
+        'projects/detail.html',
+        project=project,
+        subcontractors=subcontractors,
+        inventory_items=inventory_items,
+        invoices=invoices,
+        today=today,
+        invoiced_gross=invoiced_gross,
+    )
+
+
+@projects_bp.route('/<int:id>/quick-invoice', methods=['POST'])
+@login_required
+def quick_invoice(id):
+    project = Project.query.get_or_404(id)
+    now = datetime.today()
+    base = f"SZL-{now.year}-{now.month:02d}"
+    existing_count = Invoice.query.filter(Invoice.invoice_number.like(f"{base}-%")).count()
+    inv_number = f"{base}-{existing_count + 1:03d}"
+    while Invoice.query.filter_by(invoice_number=inv_number).first():
+        existing_count += 1
+        inv_number = f"{base}-{existing_count:03d}"
+
+    raw_amount = request.form.get('amount', '0')
+    vat_rate = float(request.form.get('vat_rate', 27))
+    amount = float(raw_amount) if raw_amount else 0.0
+    issue_str = request.form.get('issue_date')
+    due_str = request.form.get('due_date')
+
+    invoice = Invoice(
+        invoice_number=inv_number,
+        project_id=project.id,
+        client_id=project.client_id,
+        direction=request.form.get('direction', 'outgoing'),
+        amount=amount,
+        vat_rate=vat_rate,
+        amount_with_vat=round(amount * (1 + vat_rate / 100), 2),
+        currency=request.form.get('currency') or project.currency or 'HUF',
+        description=request.form.get('description', ''),
+        issue_date=datetime.strptime(issue_str, '%Y-%m-%d').date() if issue_str else now.date(),
+        due_date=datetime.strptime(due_str, '%Y-%m-%d').date() if due_str else None,
+        status='pending',
+        created_by=current_user.id,
+    )
+    db.session.add(invoice)
+    db.session.commit()
+    flash(f'Számla {inv_number} sikeresen rögzítve!', 'success')
+    return redirect(url_for('projects.detail', id=id))
+
+
+@projects_bp.route('/<int:id>/quick-payment', methods=['POST'])
+@login_required
+def quick_payment(id):
+    project = Project.query.get_or_404(id)
+    now = datetime.today()
+    raw_amount = request.form.get('amount', '0')
+    issue_str = request.form.get('issue_date')
+    due_str = request.form.get('due_date')
+
+    payment = SubcontractorPayment(
+        project_id=project.id,
+        subcontractor_id=request.form.get('subcontractor_id'),
+        amount=float(raw_amount) if raw_amount else 0.0,
+        currency=request.form.get('currency') or project.currency or 'HUF',
+        description=request.form.get('description', ''),
+        invoice_ref=request.form.get('invoice_ref', ''),
+        issue_date=datetime.strptime(issue_str, '%Y-%m-%d').date() if issue_str else now.date(),
+        due_date=datetime.strptime(due_str, '%Y-%m-%d').date() if due_str else None,
+        status='pending',
+    )
+    db.session.add(payment)
+    db.session.commit()
+    flash('Alvállalkozói kifizetés rögzítve!', 'success')
+    return redirect(url_for('projects.detail', id=id))
 
 
 @projects_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
@@ -64,13 +160,12 @@ def edit(id):
         project.client_id = request.form.get('client_id')
         project.status = request.form.get('status')
         project.contract_value = request.form.get('contract_value') or 0
+        project.currency = request.form.get('currency', 'HUF')
         project.notes = request.form.get('notes')
         start = request.form.get('start_date')
         end = request.form.get('end_date')
-        if start:
-            project.start_date = datetime.strptime(start, '%Y-%m-%d').date()
-        if end:
-            project.end_date = datetime.strptime(end, '%Y-%m-%d').date()
+        project.start_date = datetime.strptime(start, '%Y-%m-%d').date() if start else None
+        project.end_date = datetime.strptime(end, '%Y-%m-%d').date() if end else None
         db.session.commit()
         flash('Projekt frissítve!', 'success')
         return redirect(url_for('projects.detail', id=project.id))
@@ -81,7 +176,14 @@ def edit(id):
 @login_required
 def delete(id):
     project = Project.query.get_or_404(id)
-    db.session.delete(project)
-    db.session.commit()
-    flash('Projekt törölve!', 'success')
+    try:
+        ProjectInventory.query.filter_by(project_id=project.id).delete(synchronize_session=False)
+        SubcontractorPayment.query.filter_by(project_id=project.id).delete(synchronize_session=False)
+        Invoice.query.filter_by(project_id=project.id).delete(synchronize_session=False)
+        db.session.delete(project)
+        db.session.commit()
+        flash('Projekt törölve!', 'success')
+    except Exception as exc:
+        db.session.rollback()
+        flash(f'A projekt törlése sikertelen: {exc}', 'danger')
     return redirect(url_for('projects.list'))

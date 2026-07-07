@@ -70,26 +70,39 @@ class Project(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     notes = db.Column(db.Text)
+    currency = db.Column(db.String(3), default='HUF')
 
-    invoices = db.relationship('Invoice', backref='project', lazy=True)
-    subcontractor_payments = db.relationship('SubcontractorPayment', backref='project', lazy=True)
-    inventory_items = db.relationship('ProjectInventory', backref='project', lazy=True)
+    invoices = db.relationship('Invoice', backref='project', lazy=True, cascade='all, delete-orphan')
+    subcontractor_payments = db.relationship('SubcontractorPayment', backref='project', lazy=True, cascade='all, delete-orphan')
+    inventory_items = db.relationship('ProjectInventory', backref='project', lazy=True, cascade='all, delete-orphan')
+
+    @property
+    def contract_value_f(self):
+        return float(self.contract_value or 0)
 
     @property
     def total_invoiced(self):
-        return sum(float(i.amount) for i in self.invoices if i.direction == 'outgoing')
+        return sum(
+            float(i.amount_with_vat or i.amount or 0)
+            for i in self.invoices
+            if i.direction == 'outgoing' and i.status != 'cancelled'
+        )
 
     @property
     def total_received(self):
-        return sum(float(i.amount) for i in self.invoices if i.direction == 'outgoing' and i.status == 'paid')
+        return sum(
+            float(i.amount_with_vat or i.amount or 0)
+            for i in self.invoices
+            if i.direction == 'outgoing' and i.status == 'paid'
+        )
 
     @property
     def total_subcontractor_cost(self):
-        return sum(float(p.amount) for p in self.subcontractor_payments)
+        return sum(float(p.amount or 0) for p in self.subcontractor_payments)
 
     @property
     def total_subcontractor_paid(self):
-        return sum(float(p.amount) for p in self.subcontractor_payments if p.status == 'paid')
+        return sum(float(p.amount or 0) for p in self.subcontractor_payments if p.status == 'paid')
 
     @property
     def outstanding(self):
@@ -109,6 +122,7 @@ class Invoice(db.Model):
     direction = db.Column(db.String(10), nullable=False)  # outgoing (kimenő), incoming (bejövő)
     amount = db.Column(db.Numeric(15, 2), nullable=False)
     vat_rate = db.Column(db.Numeric(5, 2), default=27)
+    tax_category = db.Column(db.String(20), default='VAT')
     amount_with_vat = db.Column(db.Numeric(15, 2))
     description = db.Column(db.Text)
     issue_date = db.Column(db.Date, default=datetime.utcnow)
@@ -116,9 +130,12 @@ class Invoice(db.Model):
     paid_date = db.Column(db.Date)
     status = db.Column(db.String(20), default='pending')  # pending, paid, overdue, cancelled
     notes = db.Column(db.Text)
+    currency = db.Column(db.String(3), default='HUF')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     notification_sent = db.Column(db.Boolean, default=False)
+    pdf_data = db.Column(db.LargeBinary, nullable=True)
+    pdf_filename = db.Column(db.String(255), nullable=True)
 
 
 class SubcontractorPayment(db.Model):
@@ -134,6 +151,7 @@ class SubcontractorPayment(db.Model):
     status = db.Column(db.String(20), default='pending')  # pending, paid, overdue
     invoice_ref = db.Column(db.String(100))
     notes = db.Column(db.Text)
+    currency = db.Column(db.String(3), default='HUF')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     notification_sent = db.Column(db.Boolean, default=False)
 
@@ -150,7 +168,7 @@ class InventoryItem(db.Model):
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    project_usage = db.relationship('ProjectInventory', backref='item', lazy=True)
+    project_usage = db.relationship('ProjectInventory', backref='item', lazy=True, cascade='all, delete-orphan')
 
     @property
     def used_total(self):

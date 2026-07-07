@@ -15,10 +15,49 @@
         .badge-pending { background: #f59f00; }
         .badge-paid { background: #2fb344; }
         .badge-overdue { background: #d63939; }
+
+        /* ── Portal animated background ── */
+        html, body {
+            background:
+                radial-gradient(ellipse 60% 40% at 15% 50%, rgba(20,55,200,0.22) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 60% at 85% 15%, rgba(30,70,220,0.18) 0%, transparent 60%),
+                radial-gradient(ellipse 70% 50% at 70% 90%, rgba(120,30,160,0.15) 0%, transparent 60%),
+                linear-gradient(160deg, #060d28 0%, #081230 20%, #0a1840 50%, #0c1848 70%, #060c25 100%);
+        }
+        /* Particle canvas */
+        #portal-bg-canvas {
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+        }
+        /* Layout layers above canvas — no z-index so Bootstrap modals work */
+        .wrapper { position: relative; }
+        /* Transparent page areas so canvas shows through */
+        .page-wrapper { background: transparent !important; }
+        .page-body    { background: transparent !important; }
+        /* Cards get a crisp semi-opaque surface */
+        .card {
+            background: rgba(255,255,255,0.96) !important;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        /* Page header: subtle dark glass */
+        .page-header {
+            background: rgba(6,13,40,0.55) !important;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(100,175,255,0.1) !important;
+        }
+        .page-header .text-muted { color: rgba(185,220,255,0.7) !important; }
+        /* Footer */
+        footer.footer {
+            background: rgba(6,13,40,0.6) !important;
+            border-top: 1px solid rgba(100,175,255,0.1) !important;
+            color: rgba(155,200,255,0.45);
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="antialiased">
+<canvas id="portal-bg-canvas"></canvas>
 <div class="wrapper">
     {% if current_user.is_authenticated %}
     <!-- Sidebar -->
@@ -76,9 +115,16 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if 'subcontractors.new_payment' in request.endpoint %}active{% endif %}"
-                           href="{{ url_for('subcontractors.new_payment') }}">
+                        <a class="nav-link {% if request.endpoint == 'subcontractors.payments_list' %}active{% endif %}"
+                           href="{{ url_for('subcontractors.payments_list') }}">
                             <span class="nav-link-icon"><i class="ti ti-cash"></i></span>
+                            <span class="nav-link-title">Kifizetések</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'subcontractors.new_payment' %}active{% endif %}"
+                           href="{{ url_for('subcontractors.new_payment') }}">
+                            <span class="nav-link-icon"><i class="ti ti-plus"></i></span>
                             <span class="nav-link-title">Kifizetés rögzítése</span>
                         </a>
                     </li>
@@ -99,6 +145,18 @@
                             <span class="nav-link-title">Riportok</span>
                         </a>
                     </li>
+                    {% if current_user.role == 'admin' %}
+                    <li class="nav-item mt-2">
+                        <span class="nav-link-title text-white-50" style="font-size:0.7rem; padding: 0 0.75rem; text-transform:uppercase; letter-spacing:0.05em;">Admin</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'admin' in request.endpoint %}active{% endif %}"
+                           href="{{ url_for('admin.users') }}">
+                            <span class="nav-link-icon"><i class="ti ti-shield-lock"></i></span>
+                            <span class="nav-link-title">Felhasználók</span>
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
                 <div class="mt-auto pb-3">
                     <ul class="navbar-nav">
@@ -144,7 +202,7 @@
             </div>
         </div>
 
-        <footer class="footer py-2 mt-auto" style="background:#f8f9fa; border-top:1px solid #e9ecef;">
+        <footer class="footer py-2 mt-auto">
             <div class="container-xl text-center text-muted small">
                 SOLVIOR PROJECT &copy; 2026 — Planéta Centrum Kft.
             </div>
@@ -154,5 +212,107 @@
 <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 {% block extra_js %}{% endblock %}
+<script>
+/* ── Portal background particle system ── */
+(function() {
+    var canvas = document.getElementById('portal-bg-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+
+    function resize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    var PCOUNT = 55;
+    var particles = [];
+    for (var i = 0; i < PCOUNT; i++) {
+        particles.push({
+            x:  Math.random() * window.innerWidth,
+            y:  Math.random() * window.innerHeight,
+            r:  Math.random() * 1.4 + 0.2,
+            vx: (Math.random() - 0.5) * 0.09,
+            vy: (Math.random() - 0.5) * 0.09,
+            base: Math.random() * 0.4 + 0.08,
+            ts:  Math.random() * 0.022 + 0.006,
+            tp:  Math.random() * Math.PI * 2,
+        });
+    }
+
+    var STARS = [];
+    for (var j = 0; j < 8; j++) {
+        STARS.push({
+            x:  Math.random() * window.innerWidth,
+            y:  Math.random() * window.innerHeight * 0.8,
+            r:  Math.random() * 1.0 + 0.6,
+            ts: Math.random() * 0.035 + 0.008,
+            tp: Math.random() * Math.PI * 2,
+        });
+    }
+
+    var tick = 0;
+    var lastTime = 0;
+    var FPS_INTERVAL = 1000 / 24; /* cap at 24 fps */
+    var paused = false;
+
+    document.addEventListener('visibilitychange', function() {
+        paused = document.hidden;
+        if (!paused) requestAnimationFrame(draw);
+    });
+
+    /* Pause animation while any Bootstrap modal is open */
+    document.addEventListener('show.bs.modal', function() { paused = true; });
+    document.addEventListener('hidden.bs.modal', function() {
+        paused = false;
+        requestAnimationFrame(draw);
+    });
+
+    function draw(now) {
+        if (paused) return;
+        requestAnimationFrame(draw);
+        if (!now || now - lastTime < FPS_INTERVAL) return;
+        lastTime = now;
+        tick++;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (var k = 0; k < particles.length; k++) {
+            var p = particles[k];
+            p.x += p.vx; p.y += p.vy;
+            if (p.x < 0) p.x = canvas.width;
+            if (p.x > canvas.width)  p.x = 0;
+            if (p.y < 0) p.y = canvas.height;
+            if (p.y > canvas.height) p.y = 0;
+            var op = p.base * (0.55 + 0.45 * Math.sin(tick * p.ts + p.tp));
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(155,210,255,' + op + ')';
+            ctx.fill();
+            if (p.r > 1.0) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r * 3.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(100,180,255,' + (op * 0.1) + ')';
+                ctx.fill();
+            }
+        }
+
+        for (var s = 0; s < STARS.length; s++) {
+            var st = STARS[s];
+            var sop = 0.45 + 0.35 * Math.sin(tick * st.ts + st.tp);
+            ctx.beginPath();
+            ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(210,235,255,' + sop + ')';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(st.x, st.y, st.r * 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(150,210,255,' + (sop * 0.12) + ')';
+            ctx.fill();
+        }
+    }
+    requestAnimationFrame(draw);
+})();
+</script>
 </body>
 </html>

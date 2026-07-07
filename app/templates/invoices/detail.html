@@ -1,14 +1,16 @@
 {% extends 'base/layout.html' %}
 {% block title %}{{ invoice.invoice_number }}{% endblock %}
-{% block page_title %}Számla — {{ invoice.invoice_number }}{% endblock %}
+{% block page_title %}Számla - {{ invoice.invoice_number }}{% endblock %}
 {% block content %}
 
-<!-- Fejléc gombok -->
 <div class="d-flex justify-content-between align-items-center mb-3">
     <a href="{{ url_for('invoices.list') }}" class="btn btn-outline-secondary btn-sm">
         <i class="ti ti-arrow-left me-1"></i>Vissza a listára
     </a>
     <div class="d-flex gap-2">
+        <a href="{{ url_for('invoices.pdf', id=invoice.id) }}" class="btn btn-outline-secondary">
+            <i class="ti ti-file-download me-1"></i>PDF letöltés
+        </a>
         {% if invoice.status != 'paid' %}
         <form method="POST" action="{{ url_for('invoices.mark_paid', id=invoice.id) }}">
             <button class="btn btn-success" onclick="return confirm('Kifizetettnek jelöl?')">
@@ -23,7 +25,6 @@
 </div>
 
 <div class="row g-3">
-    <!-- Számla adatok -->
     <div class="col-lg-7">
         <div class="card">
             <div class="card-header">
@@ -50,32 +51,36 @@
                     <div class="col-md-6">
                         <div class="text-muted small mb-1">Projekt</div>
                         {% if invoice.project %}
-                        <a href="{{ url_for('projects.detail', id=invoice.project.id) }}" class="fw-semibold">
-                            {{ invoice.project.name }}
-                        </a>
-                        {% else %}<span class="text-muted">—</span>{% endif %}
+                        <a href="{{ url_for('projects.detail', id=invoice.project.id) }}" class="fw-semibold">{{ invoice.project.name }}</a>
+                        {% else %}<span class="text-muted">-</span>{% endif %}
                     </div>
                     <div class="col-md-6">
                         <div class="text-muted small mb-1">Ügyfél</div>
-                        <div class="fw-semibold">{{ invoice.client.name if invoice.client else '—' }}</div>
+                        <div class="fw-semibold">{{ invoice.client.name if invoice.client else '-' }}</div>
                     </div>
                     <div class="col-md-6">
                         <div class="text-muted small mb-1">Leírás</div>
-                        <div>{{ invoice.description or '—' }}</div>
+                        <div>{{ invoice.description or '-' }}</div>
                     </div>
                     <div class="col-md-4">
                         <div class="text-muted small mb-1">Kiállítás dátuma</div>
-                        <div>{{ invoice.issue_date or '—' }}</div>
+                        <div>{{ invoice.issue_date or '-' }}</div>
                     </div>
                     <div class="col-md-4">
                         <div class="text-muted small mb-1">Fizetési határidő</div>
-                        <div class="{% if invoice.status == 'overdue' %}text-danger fw-semibold{% endif %}">
-                            {{ invoice.due_date or '—' }}
-                        </div>
+                        <div class="{% if invoice.status == 'overdue' %}text-danger fw-semibold{% endif %}">{{ invoice.due_date or '-' }}</div>
                     </div>
                     <div class="col-md-4">
                         <div class="text-muted small mb-1">Fizetve</div>
-                        <div class="text-success">{{ invoice.paid_date or '—' }}</div>
+                        <div class="text-success">{{ invoice.paid_date or '-' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small mb-1">Pénznem</div>
+                        <div>{{ invoice.currency or 'HUF' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small mb-1">Adónem</div>
+                        <div>{{ tax_category_label }}</div>
                     </div>
                     {% if invoice.notes %}
                     <div class="col-12">
@@ -88,27 +93,24 @@
         </div>
     </div>
 
-    <!-- Összegek -->
     <div class="col-lg-5">
         <div class="card stat-card">
             <div class="card-body">
                 <div class="text-muted small mb-1">Nettó összeg</div>
-                <div class="h2 mb-0">{{ "{:,.0f}".format(invoice.amount) }} Ft</div>
+                <div class="h2 mb-0">
+                    {{ "{:,.0f}".format(invoice.amount) if (invoice.currency or 'HUF') == 'HUF' else "{:,.2f}".format(invoice.amount) }} {{ invoice.currency or 'HUF' }}
+                </div>
             </div>
         </div>
         <div class="card mt-3">
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-6 text-muted">Nettó</dt>
-                    <dd class="col-6 text-end fw-semibold">{{ "{:,.0f}".format(invoice.amount) }} Ft</dd>
-                    <dt class="col-6 text-muted">ÁFA ({{ invoice.vat_rate|int }}%)</dt>
-                    <dd class="col-6 text-end">
-                        {{ "{:,.0f}".format((invoice.amount_with_vat or invoice.amount) - invoice.amount) }} Ft
-                    </dd>
+                    <dd class="col-6 text-end fw-semibold">{{ "{:,.0f}".format(invoice.amount) if (invoice.currency or 'HUF') == 'HUF' else "{:,.2f}".format(invoice.amount) }} {{ invoice.currency or 'HUF' }}</dd>
+                    <dt class="col-6 text-muted">{% if (invoice.tax_category or 'VAT') in ['EUE', 'FAD', 'AAM'] %}{{ tax_category_label }}{% else %}ÁFA ({{ invoice.vat_rate|int }}%){% endif %}</dt>
+                    <dd class="col-6 text-end">{{ "{:,.0f}".format((invoice.amount_with_vat or invoice.amount) - invoice.amount) if (invoice.currency or 'HUF') == 'HUF' else "{:,.2f}".format((invoice.amount_with_vat or invoice.amount) - invoice.amount) }} {{ invoice.currency or 'HUF' }}</dd>
                     <dt class="col-6 fw-bold border-top pt-2">Bruttó</dt>
-                    <dd class="col-6 text-end fw-bold border-top pt-2 text-primary">
-                        {{ "{:,.0f}".format(invoice.amount_with_vat or invoice.amount) }} Ft
-                    </dd>
+                    <dd class="col-6 text-end fw-bold border-top pt-2 text-primary">{{ "{:,.0f}".format(invoice.amount_with_vat or invoice.amount) if (invoice.currency or 'HUF') == 'HUF' else "{:,.2f}".format(invoice.amount_with_vat or invoice.amount) }} {{ invoice.currency or 'HUF' }}</dd>
                 </dl>
             </div>
         </div>
@@ -123,6 +125,44 @@
             A fizetési határidő lejárt!
         </div>
         {% endif %}
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h3 class="card-title"><i class="ti ti-paperclip me-2"></i>Csatolt számla PDF</h3>
+            </div>
+            <div class="card-body">
+                {% if invoice.pdf_filename %}
+                <div class="d-flex align-items-center gap-3">
+                    <i class="ti ti-file-type-pdf text-danger" style="font-size:2rem;"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold">{{ invoice.pdf_filename }}</div>
+                        <div class="text-muted small">Feltöltött eredeti számla</div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <a href="{{ url_for('invoices.download_uploaded_pdf', id=invoice.id) }}" class="btn btn-success" target="_blank">
+                        <i class="ti ti-download me-1"></i>Letöltés
+                    </a>
+                    <a href="{{ url_for('invoices.edit', id=invoice.id) }}" class="btn btn-outline-secondary">
+                        <i class="ti ti-replace me-1"></i>Csere
+                    </a>
+                    <form method="POST" action="{{ url_for('invoices.delete_uploaded_pdf', id=invoice.id) }}" class="ms-auto" onsubmit="return confirm('Töröljük a feltöltött PDF-et?')">
+                        <button class="btn btn-outline-danger btn-sm">
+                            <i class="ti ti-trash me-1"></i>PDF törlése
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div class="text-center py-3 text-muted">
+                    <i class="ti ti-file-off" style="font-size:2rem; opacity:.4;"></i>
+                    <div class="small mt-2">Nincs feltöltött PDF</div>
+                    <a href="{{ url_for('invoices.edit', id=invoice.id) }}" class="btn btn-sm btn-outline-primary mt-2">
+                        <i class="ti ti-upload me-1"></i>PDF feltöltése
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

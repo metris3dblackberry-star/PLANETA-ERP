@@ -11,8 +11,27 @@ inventory_bp = Blueprint('inventory', __name__, url_prefix='/inventory')
 @inventory_bp.route('/')
 @login_required
 def list():
-    items = InventoryItem.query.order_by(InventoryItem.name).all()
-    return render_template('inventory/list.html', items=items)
+    q = (request.args.get('q') or '').strip()
+    category = request.args.get('category', 'all')
+    query = InventoryItem.query
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            InventoryItem.name.ilike(like)
+            | InventoryItem.sku.ilike(like)
+            | InventoryItem.category.ilike(like)
+        )
+    if category != 'all':
+        query = query.filter(InventoryItem.category == category)
+    items = query.order_by(InventoryItem.name).all()
+    categories = [
+        row[0] for row in db.session.query(InventoryItem.category)
+        .filter(InventoryItem.category.isnot(None), InventoryItem.category != '')
+        .distinct()
+        .order_by(InventoryItem.category)
+        .all()
+    ]
+    return render_template('inventory/list.html', items=items, q=q, category=category, categories=categories)
 
 
 @inventory_bp.route('/new', methods=['GET', 'POST'])
@@ -33,6 +52,24 @@ def new():
         flash(f'{item.name} hozzáadva!', 'success')
         return redirect(url_for('inventory.list'))
     return render_template('inventory/form.html', item=None)
+
+
+@inventory_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit(id):
+    item = InventoryItem.query.get_or_404(id)
+    if request.method == 'POST':
+        item.name = request.form.get('name')
+        item.sku = request.form.get('sku')
+        item.unit = request.form.get('unit')
+        item.unit_price = float(request.form.get('unit_price') or 0)
+        item.total_stock = float(request.form.get('total_stock') or 0)
+        item.category = request.form.get('category')
+        item.notes = request.form.get('notes')
+        db.session.commit()
+        flash('Készlet tétel frissítve!', 'success')
+        return redirect(url_for('inventory.list'))
+    return render_template('inventory/form.html', item=item)
 
 
 @inventory_bp.route('/import-excel', methods=['GET', 'POST'])

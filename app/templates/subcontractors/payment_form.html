@@ -1,43 +1,65 @@
 {% extends 'base/layout.html' %}
 {% block title %}Kifizetés rögzítése{% endblock %}
 {% block page_title %}Alvállalkozói kifizetés rögzítése{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-7">
+    <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h3 class="card-title">
-                    <i class="ti ti-cash me-2"></i>Kifizetés rögzítése
-                </h3>
+                <h3 class="card-title"><i class="ti ti-cash me-2"></i>Kifizetés rögzítése</h3>
             </div>
             <div class="card-body">
-                <form method="POST">
+                <form method="POST" id="paymentForm">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Projekt <span class="text-danger">*</span></label>
-                            <select name="project_id" class="form-select" required>
-                                <option value="">Válassz projektet...</option>
+                            <select name="project_id" id="paymentProject" class="form-select" required>
+                                <option value="">Válasszon projektet...</option>
                                 {% for p in projects %}
-                                <option value="{{ p.id }}"
-                                    {% if request.args.get('project_id')|string == p.id|string %}selected{% endif %}>
-                                    {{ p.name }}
-                                </option>
+                                <option value="{{ p.id }}" data-currency="{{ p.currency or 'HUF' }}">{{ p.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label">Bejövő számla</label>
+                            <select id="paymentInvoice" class="form-select">
+                                <option value="">Válasszon számlát az automatikus kitöltéshez...</option>
+                                {% for inv in invoices %}
+                                <option
+                                    value="{{ inv.id }}"
+                                    data-project-id="{{ inv.project_id }}"
+                                    data-amount="{{ inv.amount_with_vat or inv.amount or 0 }}"
+                                    data-description="{{ inv.description or '' }}"
+                                    data-invoice-ref="{{ inv.invoice_number }}"
+                                    data-currency="{{ inv.currency or inv.project.currency or 'HUF' }}"
+                                >
+                                    {{ inv.invoice_number }} - {{ inv.project.name if inv.project else '-' }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">A számla kiválasztása kitölti az összeget és a hivatkozást, de minden mező szerkeszthető marad.</div>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">Alvállalkozó <span class="text-danger">*</span></label>
                             <select name="subcontractor_id" class="form-select" required>
-                                <option value="">Válassz alvállalkozót...</option>
+                                <option value="">Válasszon alvállalkozót...</option>
                                 {% for s in subcontractors %}
                                 <option value="{{ s.id }}">{{ s.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Összeg (Ft) <span class="text-danger">*</span></label>
-                            <input type="number" name="amount" class="form-control"
-                                   min="0" step="1" placeholder="0" required>
+                        <div class="col-md-3">
+                            <label class="form-label">Összeg <span class="text-danger">*</span></label>
+                            <input type="number" name="amount" id="paymentAmount" class="form-control" min="0" step="0.01" placeholder="0" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Pénznem</label>
+                            <select name="currency" id="paymentCurrency" class="form-select">
+                                <option value="HUF">HUF</option>
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Státusz</label>
@@ -47,27 +69,20 @@
                                 <option value="overdue">Lejárt</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Kiállítás dátuma</label>
-                            <input type="date" name="issue_date" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Esedékesség</label>
-                            <input type="date" name="due_date" class="form-control">
-                        </div>
                         <div class="col-12">
-                            <label class="form-label">Leírás / Munkaszám</label>
-                            <input type="text" name="description" class="form-control"
-                                   placeholder="Elvégzett munka rövid leírása">
+                            <label class="form-label">Leírás / munkaszám</label>
+                            <input type="text" name="description" id="paymentDescription" class="form-control remember-field" data-remember-key="erp_payment_description_history" list="erpPaymentDescriptionHistory" placeholder="Elvégzett munka rövid leírása">
+                            <datalist id="erpPaymentDescriptionHistory"></datalist>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Számla hivatkozás</label>
-                            <input type="text" name="invoice_ref" class="form-control"
-                                   placeholder="pl. ALV-2026-001">
+                            <input type="text" name="invoice_ref" id="paymentInvoiceRef" class="form-control remember-field" data-remember-key="erp_payment_invoice_ref_history" list="erpPaymentInvoiceRefHistory" placeholder="pl. ALV-2026-001">
+                            <datalist id="erpPaymentInvoiceRefHistory"></datalist>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Megjegyzés</label>
-                            <textarea name="notes" class="form-control" rows="2"></textarea>
+                            <textarea name="notes" id="paymentNotes" class="form-control remember-field" rows="2" data-remember-key="erp_payment_notes_history" data-history="erpPaymentNotesHistory"></textarea>
+                            <datalist id="erpPaymentNotesHistory"></datalist>
                         </div>
                     </div>
                     <div class="mt-4 d-flex gap-2">
@@ -81,4 +96,82 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const invoiceSelect = document.getElementById('paymentInvoice');
+    const projectSelect = document.getElementById('paymentProject');
+    const amountInput = document.getElementById('paymentAmount');
+    const currencySelect = document.getElementById('paymentCurrency');
+    const descriptionInput = document.getElementById('paymentDescription');
+    const invoiceRefInput = document.getElementById('paymentInvoiceRef');
+    const paymentForm = document.getElementById('paymentForm');
+    const rememberFields = Array.from(document.querySelectorAll('.remember-field'));
+
+    if (invoiceSelect) {
+        invoiceSelect.addEventListener('change', () => {
+            const option = invoiceSelect.options[invoiceSelect.selectedIndex];
+            if (!option || !option.value) return;
+            const projectId = option.dataset.projectId;
+            if (projectId) projectSelect.value = projectId;
+            amountInput.value = option.dataset.amount || '';
+            currencySelect.value = option.dataset.currency || 'HUF';
+            invoiceRefInput.value = option.dataset.invoiceRef || '';
+            if (!descriptionInput.value) {
+                descriptionInput.value = option.dataset.description || '';
+            }
+        });
+    }
+
+    if (projectSelect) {
+        projectSelect.addEventListener('change', () => {
+            const option = projectSelect.options[projectSelect.selectedIndex];
+            if (option && option.dataset.currency) {
+                currencySelect.value = option.dataset.currency;
+            }
+        });
+    }
+
+    function getHistoryList(field) {
+        const dataHistory = field.dataset.history;
+        if (dataHistory) return document.getElementById(dataHistory);
+        const listId = field.getAttribute('list');
+        return listId ? document.getElementById(listId) : null;
+    }
+
+    function hydrateHistory(field) {
+        const key = field.dataset.rememberKey;
+        const list = getHistoryList(field);
+        if (!key || !list) return;
+        let values = [];
+        try {
+            values = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (error) {
+            values = [];
+        }
+        list.innerHTML = values.map((value) => `<option value="${String(value).replace(/"/g, '&quot;')}"></option>`).join('');
+    }
+
+    function saveHistory(field) {
+        const key = field.dataset.rememberKey;
+        const value = (field.value || '').trim();
+        if (!key || !value) return;
+        let values = [];
+        try {
+            values = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (error) {
+            values = [];
+        }
+        values = [value, ...values.filter((item) => item !== value)].slice(0, 12);
+        localStorage.setItem(key, JSON.stringify(values));
+    }
+
+    rememberFields.forEach(hydrateHistory);
+    if (paymentForm) {
+        paymentForm.addEventListener('submit', () => rememberFields.forEach(saveHistory));
+    }
+})();
+</script>
 {% endblock %}

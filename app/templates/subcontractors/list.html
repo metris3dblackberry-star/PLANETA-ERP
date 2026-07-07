@@ -13,6 +13,17 @@
         </a>
     </div>
 </div>
+<form method="GET" class="card card-body mb-3">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-10">
+            <label class="form-label">Keresés</label>
+            <input type="search" name="q" class="form-control" value="{{ q or '' }}" placeholder="Név, szakterület, email, telefon, kapcsolattartó vagy adószám">
+        </div>
+        <div class="col-md-2 d-grid">
+            <button class="btn btn-primary"><i class="ti ti-search me-1"></i>Keresés</button>
+        </div>
+    </div>
+</form>
 <div class="card">
     <div class="table-responsive">
         <table class="table table-hover table-vcenter">

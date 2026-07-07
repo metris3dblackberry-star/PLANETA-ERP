@@ -806,6 +806,21 @@ for (let i = 0; i < ARROW_N; i++) {
                     <div class="arrow-shaft" style="height:${h}px;opacity:${op};"></div>`;
     ac.appendChild(el);
 }
+
+/* ── postMessage autofill from Planéta Centrum website ── */
+window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'planeta_crm_fill') return;
+    // Accept from planetacentrum.hu or localhost (dev)
+    var trusted = ['https://planetacentrum.hu','https://www.planetacentrum.hu'];
+    var isDev   = (e.origin.includes('localhost') || e.origin.includes('127.0.0.1') || e.origin === 'null' || e.origin === '');
+    if (!trusted.includes(e.origin) && !isDev) return;
+    var emailF = document.getElementById('email') || document.querySelector('input[name="email"]');
+    var passF  = document.querySelector('input[name="password"]');
+    if (emailF) emailF.value = e.data.email    || '';
+    if (passF)  passF.value  = e.data.password || '';
+    var form = emailF && emailF.closest('form');
+    if (form) setTimeout(function() { form.submit(); }, 250);
+});
 </script>
 
 </body>

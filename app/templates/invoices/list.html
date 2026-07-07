@@ -29,6 +29,7 @@
                     <th>Projekt</th>
                     <th>Ügyfél</th>
                     <th>Irány</th>
+                    <th>Adónem</th>
                     <th>Nettó összeg</th>
                     <th>Bruttó összeg</th>
                     <th>Esedékes</th>
@@ -51,6 +52,13 @@
                     <span class="badge bg-blue-lt">Kimenő</span>
                     {% else %}
                     <span class="badge bg-purple-lt">Bejövő</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted">
+                    {% if (i.tax_category or 'VAT') == 'VAT' %}
+                    ÁFA {{ i.vat_rate|int }}%
+                    {% else %}
+                    {{ i.tax_category }}
                     {% endif %}
                 </td>
                 <td class="fw-semibold">
@@ -83,7 +91,7 @@
                 </td>
             </tr>
             {% else %}
-            <tr><td colspan="9" class="text-center text-muted py-4">Nincs számla</td></tr>
+            <tr><td colspan="10" class="text-center text-muted py-4">Nincs számla</td></tr>
             {% endfor %}
             </tbody>
         </table>

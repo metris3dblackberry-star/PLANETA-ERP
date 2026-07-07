@@ -72,6 +72,15 @@
                                 <option value="27" {% if not invoice or invoice.vat_rate == 27 %}selected{% endif %}>27%</option>
                             </select>
                         </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Adónem</label>
+                            <select name="tax_category" id="tax_category" class="form-select">
+                                {% for value, label in tax_category_options %}
+                                <option value="{{ value }}" {% if (invoice and (invoice.tax_category or 'VAT') == value) or (not invoice and value == 'VAT') %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Az EUE, FAD és AAM adónem automatikusan 0% ÁFÁ-val számol.</div>
+                        </div>
                         <div class="col-md-4">
                             <label class="form-label">Bruttó összeg</label>
                             <input type="text" id="grossDisplay" class="form-control" readonly style="background:#f8f9fa;">
@@ -152,17 +161,31 @@
     const form = document.getElementById('invoiceForm');
     const amountInput = document.getElementById('amount');
     const vatInput = document.getElementById('vat_rate');
+    const taxCategoryInput = document.getElementById('tax_category');
     const currencyInput = document.getElementById('invoiceCurrency');
     const grossDisplay = document.getElementById('grossDisplay');
     const rememberFields = Array.from(document.querySelectorAll('.remember-field'));
 
     function calcGross() {
         const amount = parseFloat(amountInput.value) || 0;
-        const vat = parseFloat(vatInput.value) || 0;
+        const specialTax = ['EUE', 'FAD', 'AAM'].includes((taxCategoryInput && taxCategoryInput.value) || 'VAT');
+        const vat = specialTax ? 0 : (parseFloat(vatInput.value) || 0);
         const currency = currencyInput.value || 'HUF';
         const gross = amount * (1 + vat / 100);
         const digits = currency === 'HUF' ? 0 : 2;
         grossDisplay.value = gross.toLocaleString('hu-HU', { maximumFractionDigits: digits }) + ' ' + currency;
+    }
+
+    function syncTaxMode() {
+        if (!taxCategoryInput || !vatInput) return;
+        const specialTax = ['EUE', 'FAD', 'AAM'].includes(taxCategoryInput.value || 'VAT');
+        if (specialTax) {
+            vatInput.value = '0';
+            vatInput.setAttribute('disabled', 'disabled');
+        } else {
+            vatInput.removeAttribute('disabled');
+        }
+        calcGross();
     }
 
     function getHistoryList(field) {
@@ -203,7 +226,9 @@
     [amountInput, vatInput, currencyInput].forEach((field) => field && field.addEventListener('input', calcGross));
     if (vatInput) vatInput.addEventListener('change', calcGross);
     if (currencyInput) currencyInput.addEventListener('change', calcGross);
+    if (taxCategoryInput) taxCategoryInput.addEventListener('change', syncTaxMode);
     if (form) form.addEventListener('submit', () => rememberFields.forEach(saveHistory));
+    syncTaxMode();
     calcGross();
 })();
 </script>

@@ -111,6 +111,8 @@ def create_app():
                         conn.execute(text('ALTER TABLE invoices ADD COLUMN pdf_filename VARCHAR(255)'))
                     if 'currency' not in existing:
                         conn.execute(text("ALTER TABLE invoices ADD COLUMN currency VARCHAR(3) DEFAULT 'HUF'"))
+                    if 'tax_category' not in existing:
+                        conn.execute(text("ALTER TABLE invoices ADD COLUMN tax_category VARCHAR(20) DEFAULT 'VAT'"))
                     if inspector.has_table('projects'):
                         project_columns = {c['name'] for c in inspector.get_columns('projects')}
                         if 'currency' not in project_columns:

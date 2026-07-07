@@ -122,6 +122,7 @@ class Invoice(db.Model):
     direction = db.Column(db.String(10), nullable=False)  # outgoing (kimenő), incoming (bejövő)
     amount = db.Column(db.Numeric(15, 2), nullable=False)
     vat_rate = db.Column(db.Numeric(5, 2), default=27)
+    tax_category = db.Column(db.String(20), default='VAT')
     amount_with_vat = db.Column(db.Numeric(15, 2))
     description = db.Column(db.Text)
     issue_date = db.Column(db.Date, default=datetime.utcnow)

@@ -78,6 +78,10 @@
                         <div class="text-muted small mb-1">Pénznem</div>
                         <div>{{ invoice.currency or 'HUF' }}</div>
                     </div>
+                    <div class="col-md-4">
+                        <div class="text-muted small mb-1">Adónem</div>
+                        <div>{{ tax_category_label }}</div>
+                    </div>
                     {% if invoice.notes %}
                     <div class="col-12">
                         <div class="text-muted small mb-1">Megjegyzés</div>
@@ -103,7 +107,7 @@
                 <dl class="row mb-0">
                     <dt class="col-6 text-muted">Nettó</dt>
                     <dd class="col-6 text-end fw-semibold">{{ "{:,.0f}".format(invoice.amount) if (invoice.currency or 'HUF') == 'HUF' else "{:,.2f}".format(invoice.amount) }} {{ invoice.currency or 'HUF' }}</dd>
-                    <dt class="col-6 text-muted">ÁFA ({{ invoice.vat_rate|int }}%)</dt>
+                    <dt class="col-6 text-muted">{% if (invoice.tax_category or 'VAT') in ['EUE', 'FAD', 'AAM'] %}{{ tax_category_label }}{% else %}ÁFA ({{ invoice.vat_rate|int }}%){% endif %}</dt>
                     <dd class="col-6 text-end">{{ "{:,.0f}".format((invoice.amount_with_vat or invoice.amount) - invoice.amount) if (invoice.currency or 'HUF') == 'HUF' else "{:,.2f}".format((invoice.amount_with_vat or invoice.amount) - invoice.amount) }} {{ invoice.currency or 'HUF' }}</dd>
                     <dt class="col-6 fw-bold border-top pt-2">Bruttó</dt>
                     <dd class="col-6 text-end fw-bold border-top pt-2 text-primary">{{ "{:,.0f}".format(invoice.amount_with_vat or invoice.amount) if (invoice.currency or 'HUF') == 'HUF' else "{:,.2f}".format(invoice.amount_with_vat or invoice.amount) }} {{ invoice.currency or 'HUF' }}</dd>

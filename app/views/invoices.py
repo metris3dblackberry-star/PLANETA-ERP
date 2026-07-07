@@ -24,6 +24,15 @@ CURRENCY_SUFFIX = {
     'USD': 'USD',
 }
 
+TAX_CATEGORY_OPTIONS = [
+    ('VAT', 'Normál ÁFA'),
+    ('EUE', 'EUE'),
+    ('FAD', 'FAD'),
+    ('AAM', 'AAM'),
+]
+
+SPECIAL_TAX_CATEGORIES = {'EUE', 'FAD', 'AAM'}
+
 
 def _format_money(amount, currency='HUF'):
     value = float(amount or 0)
@@ -31,6 +40,20 @@ def _format_money(amount, currency='HUF'):
     if code == 'HUF':
         return f"{value:,.0f} Ft".replace(',', ' ')
     return f"{value:,.2f} {CURRENCY_SUFFIX.get(code, code)}".replace(',', ' ').replace('.', ',')
+
+
+def _normalize_tax_category(raw_value):
+    value = (raw_value or 'VAT').upper()
+    allowed = {item[0] for item in TAX_CATEGORY_OPTIONS}
+    return value if value in allowed else 'VAT'
+
+
+def _tax_category_label(category):
+    normalized = _normalize_tax_category(category)
+    for value, label in TAX_CATEGORY_OPTIONS:
+        if value == normalized:
+            return label
+    return 'Normál ÁFA'
 
 
 def next_invoice_number():
@@ -63,7 +86,10 @@ def new():
     clients = Client.query.filter_by(is_active=True).order_by(Client.name).all()
     if request.method == 'POST':
         amount = float(request.form.get('amount', 0))
+        tax_category = _normalize_tax_category(request.form.get('tax_category'))
         vat_rate = float(request.form.get('vat_rate', 27))
+        if tax_category in SPECIAL_TAX_CATEGORIES:
+            vat_rate = 0
         amount_with_vat = amount * (1 + vat_rate / 100)
 
         invoice = Invoice(
@@ -73,6 +99,7 @@ def new():
             direction=request.form.get('direction'),
             amount=amount,
             vat_rate=vat_rate,
+            tax_category=tax_category,
             amount_with_vat=amount_with_vat,
             description=request.form.get('description'),
             issue_date=datetime.strptime(request.form.get('issue_date'), '%Y-%m-%d').date() if request.form.get('issue_date') else date.today(),
@@ -99,7 +126,14 @@ def new():
         flash(f'Számla {invoice.invoice_number} létrehozva!', 'success')
         return redirect(url_for('invoices.detail', id=invoice.id))
 
-    return render_template('invoices/form.html', projects=projects, clients=clients, next_number=next_invoice_number(), invoice=None)
+    return render_template(
+        'invoices/form.html',
+        projects=projects,
+        clients=clients,
+        next_number=next_invoice_number(),
+        invoice=None,
+        tax_category_options=TAX_CATEGORY_OPTIONS,
+    )
 
 
 @invoices_bp.route('/<int:id>')
@@ -107,7 +141,11 @@ def new():
 def detail(id):
     update_overdue_invoices()
     invoice = Invoice.query.get_or_404(id)
-    return render_template('invoices/detail.html', invoice=invoice)
+    return render_template(
+        'invoices/detail.html',
+        invoice=invoice,
+        tax_category_label=_tax_category_label(invoice.tax_category),
+    )
 
 
 def _register_pdf_font():
@@ -148,6 +186,9 @@ def pdf(id):
     net = float(invoice.amount or 0)
     gross = float(invoice.amount_with_vat or invoice.amount or 0)
     vat = gross - net
+    tax_category = _normalize_tax_category(invoice.tax_category)
+    tax_label = _tax_category_label(invoice.tax_category)
+    tax_amount_label = tax_label if tax_category in SPECIAL_TAX_CATEGORIES else f'ÁFA ({float(invoice.vat_rate or 0):.0f}%)'
     status_labels = {
         'paid': 'Fizetve',
         'pending': 'Függőben',
@@ -171,6 +212,7 @@ def pdf(id):
         ['Fizetési határidő', invoice.due_date or '-'],
         ['Státusz', status_labels.get(invoice.status, invoice.status)],
         ['Pénznem', invoice.currency or 'HUF'],
+        ['Adónem', tax_label],
     ], colWidths=[45 * mm, 110 * mm])
     header.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), font_name),
@@ -188,7 +230,7 @@ def pdf(id):
 
     amounts = Table([
         ['Nettó összeg', _format_money(net, invoice.currency)],
-        [f'ÁFA ({float(invoice.vat_rate or 0):.0f}%)', _format_money(vat, invoice.currency)],
+        [tax_amount_label, _format_money(vat, invoice.currency)],
         ['Bruttó összeg', _format_money(gross, invoice.currency)],
     ], colWidths=[85 * mm, 70 * mm])
     amounts.setStyle(TableStyle([
@@ -241,7 +283,10 @@ def edit(id):
         invoice.client_id = int(request.form.get('client_id'))
         invoice.direction = request.form.get('direction')
         invoice.amount = float(request.form.get('amount', 0))
+        invoice.tax_category = _normalize_tax_category(request.form.get('tax_category'))
         invoice.vat_rate = float(request.form.get('vat_rate', 27))
+        if invoice.tax_category in SPECIAL_TAX_CATEGORIES:
+            invoice.vat_rate = 0
         invoice.amount_with_vat = invoice.amount * (1 + invoice.vat_rate / 100)
         invoice.description = request.form.get('description')
         invoice.status = request.form.get('status')
@@ -259,7 +304,14 @@ def edit(id):
         flash('Számla frissítve!', 'success')
         return redirect(url_for('invoices.detail', id=invoice.id))
 
-    return render_template('invoices/form.html', projects=projects, clients=clients, invoice=invoice, next_number=invoice.invoice_number)
+    return render_template(
+        'invoices/form.html',
+        projects=projects,
+        clients=clients,
+        invoice=invoice,
+        next_number=invoice.invoice_number,
+        tax_category_options=TAX_CATEGORY_OPTIONS,
+    )
 
 
 @invoices_bp.route('/<int:id>/delete', methods=['POST'])

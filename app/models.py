@@ -72,9 +72,9 @@ class Project(db.Model):
     notes = db.Column(db.Text)
     currency = db.Column(db.String(3), default='HUF')
 
-    invoices = db.relationship('Invoice', backref='project', lazy=True)
-    subcontractor_payments = db.relationship('SubcontractorPayment', backref='project', lazy=True)
-    inventory_items = db.relationship('ProjectInventory', backref='project', lazy=True)
+    invoices = db.relationship('Invoice', backref='project', lazy=True, cascade='all, delete-orphan')
+    subcontractor_payments = db.relationship('SubcontractorPayment', backref='project', lazy=True, cascade='all, delete-orphan')
+    inventory_items = db.relationship('ProjectInventory', backref='project', lazy=True, cascade='all, delete-orphan')
 
     @property
     def contract_value_f(self):
@@ -167,7 +167,7 @@ class InventoryItem(db.Model):
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    project_usage = db.relationship('ProjectInventory', backref='item', lazy=True)
+    project_usage = db.relationship('ProjectInventory', backref='item', lazy=True, cascade='all, delete-orphan')
 
     @property
     def used_total(self):

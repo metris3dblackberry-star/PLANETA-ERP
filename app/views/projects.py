@@ -1,10 +1,18 @@
-from datetime import datetime, date as date_type
+from datetime import date as date_type, datetime
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app import db
-from app.models import Client, InventoryItem, Invoice, Project, Subcontractor, SubcontractorPayment
+from app.models import (
+    Client,
+    InventoryItem,
+    Invoice,
+    Project,
+    ProjectInventory,
+    Subcontractor,
+    SubcontractorPayment,
+)
 
 projects_bp = Blueprint('projects', __name__, url_prefix='/projects')
 
@@ -13,10 +21,10 @@ projects_bp = Blueprint('projects', __name__, url_prefix='/projects')
 @login_required
 def list():
     status = request.args.get('status', 'all')
-    q = Project.query
+    query = Project.query
     if status != 'all':
-        q = q.filter_by(status=status)
-    projects = q.order_by(Project.created_at.desc()).all()
+        query = query.filter_by(status=status)
+    projects = query.order_by(Project.created_at.desc()).all()
     return render_template('projects/list.html', projects=projects, status=status)
 
 
@@ -41,10 +49,12 @@ def new():
             project.start_date = datetime.strptime(start, '%Y-%m-%d').date()
         if end:
             project.end_date = datetime.strptime(end, '%Y-%m-%d').date()
+
         db.session.add(project)
         db.session.commit()
         flash(f'"{project.name}" projekt létrehozva!', 'success')
         return redirect(url_for('projects.detail', id=project.id))
+
     return render_template('projects/form.html', clients=clients, project=None)
 
 
@@ -54,7 +64,9 @@ def detail(id):
     project = Project.query.get_or_404(id)
     subcontractors = Subcontractor.query.filter_by(is_active=True).all()
     inventory_items = InventoryItem.query.order_by(InventoryItem.name).all()
-    invoices = Invoice.query.filter_by(project_id=project.id).order_by(Invoice.issue_date.desc(), Invoice.created_at.desc()).all()
+    invoices = Invoice.query.filter_by(project_id=project.id).order_by(
+        Invoice.issue_date.desc(), Invoice.created_at.desc()
+    ).all()
     today = date_type.today().isoformat()
     invoiced_gross = sum(
         float(i.amount_with_vat or i.amount or 0)
@@ -164,13 +176,14 @@ def edit(id):
 @login_required
 def delete(id):
     project = Project.query.get_or_404(id)
-    for inventory_item in list(project.inventory_items):
-        db.session.delete(inventory_item)
-    for payment in list(project.subcontractor_payments):
-        db.session.delete(payment)
-    for invoice in list(project.invoices):
-        db.session.delete(invoice)
-    db.session.delete(project)
-    db.session.commit()
-    flash('Projekt törölve!', 'success')
+    try:
+        ProjectInventory.query.filter_by(project_id=project.id).delete(synchronize_session=False)
+        SubcontractorPayment.query.filter_by(project_id=project.id).delete(synchronize_session=False)
+        Invoice.query.filter_by(project_id=project.id).delete(synchronize_session=False)
+        db.session.delete(project)
+        db.session.commit()
+        flash('Projekt törölve!', 'success')
+    except Exception as exc:
+        db.session.rollback()
+        flash(f'A projekt törlése sikertelen: {exc}', 'danger')
     return redirect(url_for('projects.list'))
